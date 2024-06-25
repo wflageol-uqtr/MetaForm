@@ -1,0 +1,40 @@
+﻿@page "/upload-file"
+@using Microsoft.AspNetCore.Components.Forms
+@inject IWebHostEnvironment WebHostEnvironment
+
+<h3>Upload HTML File</h3>
+
+<InputFile OnChange="HandleFileSelected" />
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <p>@Message</p>
+}
+
+@code {
+    private string   Message { get; set; }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file != null)
+        {
+            var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, file.Name);
+
+            using (var stream = file.OpenReadStream())
+            {
+                using (var fileStream = new FileStream(uploadPath, FileMode.Create))
+                {
+                    await stream.CopyToAsync(fileStream);
+                }
+            }
+
+            Message = $"File uploaded successfully: {file.Name}";
+        }
+        else
+        {
+            Message = "No file selected.";
+        }
+    }
+}

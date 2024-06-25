@@ -6,4 +6,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Remove="Pages\UploadFile.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Pages\UploadFile.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Pages\UploadFile.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Pages\UploadFile.razor" />
+  </ItemGroup>
+
 </Project>
