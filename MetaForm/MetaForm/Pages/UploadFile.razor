@@ -4,25 +4,61 @@
 
 <h3>Upload HTML File</h3>
 
-<InputFile OnChange="HandleFileSelected" />
+<div>
+    <InputFile OnChange="StoreFile" />
+</div>
+
+<div>
+    <button @onclick="HandleFileSelected">Upload File</button>
+</div>
 
 @if (!string.IsNullOrEmpty(Message))
 {
-    <p>@Message</p>
+        <p>@Message</p>
+}
+
+<h3>Uploaded Files</h3>
+
+@if (UploadedFiles != null && UploadedFiles.Any())
+{
+        <ul>
+        @foreach (var file in UploadedFiles)
+        {
+                    <li>
+                @file
+                        <button @onclick="() => DeleteFile(file)">Delete</button>
+                    </li>
+        }
+        </ul>
+}
+else
+{
+        <p>No files uploaded.</p>
 }
 
 @code {
-    private string   Message { get; set; }
+    private IBrowserFile SelectedFile { get; set; }
+    private string Message { get; set; }
+    private List<string> UploadedFiles { get; set; }
 
-    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    protected override void OnInitialized()
     {
-        var file = e.File;
+        LoadUploadedFiles();
+    }
 
-        if (file != null)
+    private void StoreFile(InputFileChangeEventArgs e)
+    {
+        SelectedFile = e.File;
+        Message = "File selected: " + SelectedFile.Name;
+    }
+
+    private async Task HandleFileSelected()
+    {
+        if (SelectedFile != null)
         {
-            var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, file.Name);
+            var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, SelectedFile.Name);
 
-            using (var stream = file.OpenReadStream())
+            using (var stream = SelectedFile.OpenReadStream())
             {
                 using (var fileStream = new FileStream(uploadPath, FileMode.Create))
                 {
@@ -30,11 +66,33 @@
                 }
             }
 
-            Message = $"File uploaded successfully: {file.Name}";
+            Message = $"File uploaded successfully: {SelectedFile.Name}";
+            LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
         }
         else
         {
             Message = "No file selected.";
+        }
+    }
+
+    private void LoadUploadedFiles()
+    {
+        var uploadDirectory = WebHostEnvironment.WebRootPath;
+        UploadedFiles = Directory.GetFiles(uploadDirectory, "*.html").Select(Path.GetFileName).ToList();
+    }
+
+    private void DeleteFile(string fileName)
+    {
+        var filePath = Path.Combine(WebHostEnvironment.WebRootPath, fileName);
+        if (System.IO.File.Exists(filePath))
+        {
+            System.IO.File.Delete(filePath);
+            Message = $"File deleted: {fileName}";
+            LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
+        }
+        else
+        {
+            Message = "File not found.";
         }
     }
 }
