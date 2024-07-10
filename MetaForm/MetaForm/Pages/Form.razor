@@ -1,0 +1,47 @@
+﻿@page "/form"
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+
+<h3>Form Example</h3>
+
+<div id="messageContainer" style="display:none; margin-bottom: 10px;"></div>
+
+<form id="exampleForm">
+    <label for="name">Nom ou Titre:</label>
+    <input type="text" id="name" name="name"><br><br>
+
+    <label for="region">Région:</label>
+    <select id="region" name="region">
+        <option value="aucun">(Aucun)</option>
+        <option value="north">North</option>
+        <option value="south">South</option>
+        <option value="east">East</option>
+        <option value="west">West</option>
+    </select><br><br>
+
+    <label for="ug">UG:</label>
+    <input type="text" id="ug" name="ug"><br><br>
+
+    <!-- Ajoutez d'autres champs ici -->
+
+    <button type="button" @onclick="SaveRecord">Sauvegarder</button>
+</form>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("associateForm", "exampleForm", "listName", "record1");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "name", "name");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "ug", "ug");
+            await JSRuntime.InvokeVoidAsync("associateMultiSelectField", "region", "regionsList", "region");
+        }
+    }
+
+    private async Task SaveRecord()
+    {
+        Console.WriteLine("SaveRecord called"); // Debug message
+        await JSRuntime.InvokeVoidAsync("saveCurrentRecord");
+    }
+}
