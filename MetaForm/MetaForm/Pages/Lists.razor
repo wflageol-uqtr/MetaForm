@@ -1,6 +1,7 @@
-﻿@page "/"
-@using MetaForm.Data
+﻿@using MetaForm.Data
 @using MetaForm.models
+@page "/lists"
+
 @inject ListService ListService
 
 <h3>Lists</h3>
@@ -17,7 +18,6 @@
         }
     }
 </ul>
-
 @code {
     private List<List> lists;
 

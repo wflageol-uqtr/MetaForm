@@ -15,10 +15,12 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
 
+builder.Services.AddSingleton<ListService>();
+
 // Ajouter le service HttpClient
 builder.Services.AddHttpClient();
 
-// Ajoutez les services pour le contrôleur et le service de données de formulaire
+// Ajoutez les services pour le contrÃ´leur et le service de donnÃ©es de formulaire
 builder.Services.AddSingleton<FormDataService>();
 builder.Services.AddControllers();
 
@@ -32,13 +34,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
 
 app.UseStaticFiles();
-
+app.UseHttpsRedirection();
 app.UseRouting();
 
-// Mappez les contrôleurs pour les API
+// Mappez les contrÃ´leurs pour les API
 app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
