@@ -1,0 +1,24 @@
+{
+  "record1": {
+    "name": "RXE",
+    "ug": "UG001",
+    "region": [
+      "north"
+    ]
+  },
+  "record2": {
+    "name": "XYZ",
+    "ug": "UG002",
+    "ua": "UA002",
+    "anneeReference": "2023",
+    "intervenant": "Alice Johnson",
+    "representantIntervenant": "Bob Brown",
+    "noEntenteContratPermis": "67890",
+    "detecteLors": "Audit",
+    "detectePar": "Agent Y",
+    "detecteLe": "2023-02-01",
+    "region": [
+      "south"
+    ]
+  }
+}
