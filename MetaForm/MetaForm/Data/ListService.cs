@@ -27,7 +27,7 @@ namespace MetaForm.Data
             return Task.FromResult(lists);
         }
 
-        public Task<List> GetListAsync(int id)
+        public Task<List?> GetListAsync(int id)
         {
             var list = lists.FirstOrDefault(l => l.Id == id);
             return Task.FromResult(list);
