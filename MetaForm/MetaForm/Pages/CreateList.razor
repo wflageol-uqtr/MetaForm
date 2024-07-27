@@ -1,0 +1,22 @@
+﻿@page "/create-list"
+@using MetaForm.Data
+@using MetaForm.models
+@inject ListService ListService
+@inject NavigationManager Navigation
+
+<h3>Create New List</h3>
+
+<input @bind="name" placeholder="List Name" />
+<button @onclick="Createlist">Create   </button>
+
+@code {
+    private string name;
+
+    private async Task Createlist()
+    {
+        var newList = new List { Name = name };
+        await ListService.AddListAsync(newList);
+        name = string.Empty;
+        Navigation.NavigateTo("/lists");
+    }
+}
