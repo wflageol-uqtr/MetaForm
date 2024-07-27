@@ -1,0 +1,101 @@
+{
+  "Files": [
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\obj\\Debug\\net6.0\\scopedcss\\projectbundle\\MetaForm.bundle.scp.css",
+      "PackagePath": "staticwebassets\\MetaForm.bundle.scp.css"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\bootstrap\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\css\\bootstrap\\bootstrap.min.css"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\bootstrap\\bootstrap.min.css.map",
+      "PackagePath": "staticwebassets\\css\\bootstrap\\bootstrap.min.css.map"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\open-iconic\\FONT-LICENSE",
+      "PackagePath": "staticwebassets\\css\\open-iconic"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\open-iconic\\ICON-LICENSE",
+      "PackagePath": "staticwebassets\\css\\open-iconic"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\open-iconic\\README.md",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\README.md"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\open-iconic\\font\\css\\open-iconic-bootstrap.min.css",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\css\\open-iconic-bootstrap.min.css"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\open-iconic\\font\\fonts\\open-iconic.eot",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\fonts\\open-iconic.eot"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\open-iconic\\font\\fonts\\open-iconic.otf",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\fonts\\open-iconic.otf"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\open-iconic\\font\\fonts\\open-iconic.svg",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\fonts\\open-iconic.svg"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\open-iconic\\font\\fonts\\open-iconic.ttf",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\fonts\\open-iconic.ttf"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\open-iconic\\font\\fonts\\open-iconic.woff",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\fonts\\open-iconic.woff"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\css\\site.css",
+      "PackagePath": "staticwebassets\\css\\site.css"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\data\\formData.json",
+      "PackagePath": "staticwebassets\\data\\formData.json"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\favicon.ico",
+      "PackagePath": "staticwebassets\\favicon.ico"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\htmlpage.html",
+      "PackagePath": "staticwebassets\\htmlpage.html"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\htmlpage1.html",
+      "PackagePath": "staticwebassets\\htmlpage1.html"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\js\\form-handler.js",
+      "PackagePath": "staticwebassets\\js\\form-handler.js"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\uploads\\htmlpage.html",
+      "PackagePath": "staticwebassets\\uploads\\htmlpage.html"
+    },
+    {
+      "Id": "X:\\finaleone\\MetaForm\\MetaForm\\wwwroot\\uploads\\htmlpage1.html",
+      "PackagePath": "staticwebassets\\uploads\\htmlpage1.html"
+    },
+    {
+      "Id": "obj\\Debug\\net6.0\\staticwebassets\\msbuild.MetaForm.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net6.0\\staticwebassets\\msbuild.build.MetaForm.props",
+      "PackagePath": "build\\MetaForm.props"
+    },
+    {
+      "Id": "obj\\Debug\\net6.0\\staticwebassets\\msbuild.buildMultiTargeting.MetaForm.props",
+      "PackagePath": "buildMultiTargeting\\MetaForm.props"
+    },
+    {
+      "Id": "obj\\Debug\\net6.0\\staticwebassets\\msbuild.buildTransitive.MetaForm.props",
+      "PackagePath": "buildTransitive\\MetaForm.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

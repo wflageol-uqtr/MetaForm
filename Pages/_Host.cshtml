@@ -1,0 +1,11 @@
+﻿@page "/"
+@namespace MetaForm.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = "_Layout";
+}
+
+<component type="typeof(App)" render-mode="ServerPrerendered" />
+
+<!-- Ajoutez cette ligne pour référencer le fichier JavaScript avec un chemin plus précis -->
+<script src="js/form-handler.js"></script>
