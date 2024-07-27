@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MetaForm")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d9d391dbc1145637fd3cee06536f5cd0be8949bb")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ca99c2fe60f23373a50881f8b0987f2bff90b71e")]
 [assembly: System.Reflection.AssemblyProductAttribute("MetaForm")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MetaForm")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
