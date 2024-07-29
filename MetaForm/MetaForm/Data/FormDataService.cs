@@ -1,6 +1,35 @@
-﻿public class FormDataService
+﻿using MetaForm.models;
+using MetaForm.Models;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+public class FormDataService
 {
-    // Retourne un dictionnaire de données de formulaire codées en dur
+    private readonly string filePath = "data.json";
+    private List<List> lists;
+
+    public List<List> Lists
+    {
+        get => lists;
+        set => lists = value ?? new List<List>();
+    }
+
+    public FormDataService()
+    {
+        if (File.Exists(filePath))
+        {
+            var jsonData = File.ReadAllText(filePath);
+            Lists = JsonSerializer.Deserialize<List<List>>(jsonData) ?? new List<List>();
+        }
+        else
+        {
+            Lists = new List<List>();
+        }
+    }
+
     public Dictionary<string, object> GetHardcodedData()
     {
         return new Dictionary<string, object>
@@ -17,5 +46,26 @@
             { "detectePar", "Agent X" },
             { "detecteLe", "2024-01-01" }
         };
+    }
+
+    public Task AssociateFileWithListItem(int listId, int itemId, string filePath)
+    {
+        var list = Lists.FirstOrDefault(l => l.Id == listId);
+        if (list != null)
+        {
+            var item = list.Items.FirstOrDefault(i => i.ContainsKey("Id") && i["Id"] == itemId.ToString());
+            if (item != null)
+            {
+                item["FilePath"] = filePath;
+                SaveChanges();
+            }
+        }
+        return Task.CompletedTask;
+    }
+
+    private void SaveChanges()
+    {
+        var jsonData = JsonSerializer.Serialize(Lists, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(filePath, jsonData);
     }
 }

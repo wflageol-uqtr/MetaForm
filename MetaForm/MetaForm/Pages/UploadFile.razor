@@ -1,98 +1,281 @@
 ﻿@page "/upload-file"
+@using MetaForm.Data
+@using MetaForm.Models
+@using MetaForm.models
 @using Microsoft.AspNetCore.Components.Forms
+@using System.Text.Json
 @inject IWebHostEnvironment WebHostEnvironment
+@inject FormDataService FormDataService
+@inject ListService ListService
 
 <h3>Upload HTML File</h3>
 
+<!-- Section pour sélectionner un fichier -->
 <div>
     <InputFile OnChange="StoreFile" />
 </div>
 
+<!-- Section pour sélectionner une liste -->
+<div>
+    <label for="listSelect">Select List:</label>
+    <select id="listSelect" @onchange="LoadItems">
+        <option value="">Select List</option>
+        @foreach (var list in lists)
+        {
+            <option value="@list.Id">@list.Name</option>
+        }
+    </select>
+</div>
+
+@if (selectedListId.HasValue)
+{
+    <!-- Section pour sélectionner un élément de la liste -->
+    <div>
+        <label for="itemSelect">Select Item:</label>
+        <select id="itemSelect" @bind="selectedItemId">
+            <option value="">Select Item</option>
+            @foreach (var item in items)
+            {
+                @if (item.ContainsKey("Id") && item.ContainsKey("Name"))
+                {
+                    <option value="@item["Id"]">@item["Name"]</option>
+                }
+                else
+                {
+                    Console.Error.WriteLine($"Item missing Id or Name: {JsonSerializer.Serialize(item)}");
+                }
+            }
+        </select>
+        <button @onclick="CreateNewItem" disabled="@isCreatingNewItem">Create New Item</button>
+    </div>
+}
+
+<!-- Bouton pour téléverser le fichier -->
 <div>
     <button @onclick="HandleFileSelected">Upload File</button>
 </div>
 
 @if (!string.IsNullOrEmpty(Message))
 {
-        <p>@Message</p>
+    <p>@Message</p>
 }
 
+<!-- Liste des fichiers téléversés -->
 <h3>Uploaded Files</h3>
 
 @if (UploadedFiles != null && UploadedFiles.Any())
 {
-        <ul>
+    <ul>
         @foreach (var file in UploadedFiles)
         {
-                    <li>
+            <li>
                 @file
-                        <button @onclick="() => DeleteFile(file)">Delete</button>
-                    </li>
+                <button @onclick="() => DeleteFile(file)">Delete</button>
+            </li>
         }
-        </ul>
+    </ul>
 }
 else
 {
-        <p>No files uploaded.</p>
+    <p>No files uploaded.</p>
 }
 
 @code {
-    private IBrowserFile SelectedFile { get; set; }
-    private string Message { get; set; }
-    private List<string> UploadedFiles { get; set; }
+    private IBrowserFile SelectedFile { get; set; } = null!;
+    private string Message { get; set; } = string.Empty;
+    private List<string> UploadedFiles { get; set; } = new List<string>();
+    private List<List> lists = new List<List>();
+    private List<Dictionary<string, string>> items = new List<Dictionary<string, string>>();
+    private int? selectedListId;
+    private int? selectedItemId;
+    private bool isCreatingNewItem = false; // Flag to track if a new item is being created
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        LoadUploadedFiles();
+        try
+        {
+            Console.Error.WriteLine("Initializing component...");
+            lists = await ListService.GetListsAsync();
+            Console.Error.WriteLine($"Loaded {lists.Count} lists.");
+            LoadUploadedFiles();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error initializing component: {ex.Message}");
+        }
     }
 
     private void StoreFile(InputFileChangeEventArgs e)
     {
-        SelectedFile = e.File;
-        Message = "File selected: " + SelectedFile.Name;
+        try
+        {
+            SelectedFile = e.File;
+            Message = "File selected: " + SelectedFile.Name;
+            Console.Error.WriteLine(Message);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error storing file: {ex.Message}");
+        }
+    }
+
+    private async Task CreateNewItem()
+    {
+        try
+        {
+            Console.Error.WriteLine("Creating new item...");
+            if (selectedListId.HasValue)
+            {
+                var list = await ListService.GetListAsync(selectedListId.Value);
+                if (list != null)
+                {
+                    var newItem = new Dictionary<string, string>();
+
+                    // Initialize new item with empty values for each column
+                    foreach (var column in list.Columns)
+                    {
+                        newItem[column] = string.Empty;
+                    }
+
+                    // Ensure unique ID for new item
+                    int newId = list.Items.Count > 0 ? list.Items.Max(i => int.Parse(i["Id"])) + 1 : 1;
+                    newItem["Id"] = newId.ToString();
+                    newItem["Name"] = "New Item";
+
+                    // Add new item to list
+                    list.Items.Add(newItem);
+                    await ListService.UpdateListAsync(list);
+
+                    // Update the items and selected item ID
+                    items = list.Items;
+                    selectedItemId = newId;
+
+                    Console.Error.WriteLine($"Created new item with ID {newItem["Id"]}."); // Debug message
+                    StateHasChanged(); // Force la mise à jour de l'interface
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error creating new item: {ex.Message}");
+        }
     }
 
     private async Task HandleFileSelected()
     {
-        if (SelectedFile != null)
+        try
         {
-            var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, SelectedFile.Name);
-
-            using (var stream = SelectedFile.OpenReadStream())
+            Console.Error.WriteLine("Handling file selection...");
+            if (SelectedFile != null && selectedListId.HasValue && selectedItemId.HasValue)
             {
-                using (var fileStream = new FileStream(uploadPath, FileMode.Create))
-                {
-                    await stream.CopyToAsync(fileStream);
-                }
-            }
+                var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", SelectedFile.Name);
 
-            Message = $"File uploaded successfully: {SelectedFile.Name}";
-            LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
+                Console.Error.WriteLine($"Upload path: {uploadPath}");
+                using (var stream = SelectedFile.OpenReadStream())
+                {
+                    using (var fileStream = new FileStream(uploadPath, FileMode.Create))
+                    {
+                        await stream.CopyToAsync(fileStream);
+                    }
+                }
+
+                await FormDataService.AssociateFileWithListItem(selectedListId.Value, selectedItemId.Value, uploadPath);
+
+                // Mise à jour du chemin du fichier dans l'élément de la liste
+                var list = await ListService.GetListAsync(selectedListId.Value);
+                if (list != null)
+                {
+                    var item = list.Items.FirstOrDefault(i => i["Id"] == selectedItemId.Value.ToString());
+                    if (item != null)
+                    {
+                        item["FilePath"] = uploadPath; // Ajout du chemin du fichier
+                        await ListService.UpdateListAsync(list); // Mise à jour de la liste
+                    }
+                }
+
+                Message = $"File uploaded successfully: {SelectedFile.Name}";
+                Console.Error.WriteLine($"File uploaded successfully to {uploadPath}.");
+                LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
+            }
+            else
+            {
+                Message = "Please select a file, list, and item.";
+                Console.Error.WriteLine("File upload failed: missing file, list, or item selection.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Message = "No file selected.";
+            Console.Error.WriteLine($"Error handling file selection: {ex.Message}");
+            Message = $"Error: {ex.Message}";
         }
     }
 
     private void LoadUploadedFiles()
     {
-        var uploadDirectory = WebHostEnvironment.WebRootPath;
-        UploadedFiles = Directory.GetFiles(uploadDirectory, "*.html").Select(Path.GetFileName).ToList();
+        try
+        {
+            Console.Error.WriteLine("Loading uploaded files...");
+            var uploadDirectory = Path.Combine(WebHostEnvironment.WebRootPath, "uploads");
+            if (!Directory.Exists(uploadDirectory))
+            {
+                Directory.CreateDirectory(uploadDirectory);
+            }
+            UploadedFiles = Directory.GetFiles(uploadDirectory, "*.html").Select(Path.GetFileName).ToList();
+            Console.Error.WriteLine($"Loaded {UploadedFiles.Count} uploaded files."); // Debug message
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading uploaded files: {ex.Message}");
+        }
+    }
+
+    private async Task LoadItems(ChangeEventArgs e)
+    {
+        try
+        {
+            Console.Error.WriteLine("Loading items for the selected list...");
+            selectedListId = int.Parse(e.Value.ToString());
+            var list = await ListService.GetListAsync(selectedListId.Value);
+            if (list != null)
+            {
+                items = list.Items;
+                Console.Error.WriteLine($"Loaded {items.Count} items for the list.");
+                StateHasChanged(); // Force UI update
+            }
+            else
+            {
+                items.Clear();
+                Console.Error.WriteLine("No items found for the selected list.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading items: {ex.Message}");
+        }
     }
 
     private void DeleteFile(string fileName)
     {
-        var filePath = Path.Combine(WebHostEnvironment.WebRootPath, fileName);
-        if (System.IO.File.Exists(filePath))
+        try
         {
-            System.IO.File.Delete(filePath);
-            Message = $"File deleted: {fileName}";
-            LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
+            Console.Error.WriteLine("Deleting file...");
+            var filePath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", fileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+                Message = $"File deleted: {fileName}";
+                Console.Error.WriteLine(Message); // Debug message
+                LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
+            }
+            else
+            {
+                Message = "File not found.";
+                Console.Error.WriteLine(Message); // Debug message
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Message = "File not found.";
+            Console.Error.WriteLine($"Error deleting file: {ex.Message}");
         }
     }
 }

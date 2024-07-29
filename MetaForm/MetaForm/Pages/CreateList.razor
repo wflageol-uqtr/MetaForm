@@ -14,7 +14,7 @@
 
     private async Task Createlist()
     {
-        var newList = new List { Name = name };
+        var newList = new Models.List { Name = name };
         await ListService.AddListAsync(newList);
         name = string.Empty;
         Navigation.NavigateTo("/lists");
