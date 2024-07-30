@@ -1,0 +1,25 @@
+﻿@page "/view-file/{fileName}"
+@inject IWebHostEnvironment WebHostEnvironment
+@using System.IO
+@code {
+    [Parameter]
+    public string FileName { get; set; }
+
+    private string FileContent { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        var filePath = Path.Combine(WebHostEnvironment.WebRootPath, FileName);
+        if (System.IO.File.Exists(filePath))
+        {
+            FileContent = System.IO.File.ReadAllText(filePath);
+        }
+        else
+        {
+            FileContent = "File not found.";
+        }
+    }
+}
+
+<h3>File Content: @FileName</h3>
+<div>@((MarkupString)FileContent)</div>
