@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Text.Json
 @inject IWebHostEnvironment WebHostEnvironment
+@inject NavigationManager NavigationManager
 @inject FormDataService FormDataService
 @inject ListService ListService
 
@@ -66,13 +67,13 @@
 @if (UploadedFiles != null && UploadedFiles.Any())
 {
     <ul>
-        @foreach (var file in UploadedFiles)
-        {
-            <li>
-                @file
-                <button @onclick="() => DeleteFile(file)">Delete</button>
-            </li>
-        }
+    @foreach (var file in UploadedFiles)
+    {
+        <li>
+            <button @onclick="() => ViewFile(file)">@file</button>
+            <button @onclick="() => DeleteFile(file)">Delete</button>
+        </li>
+    }
     </ul>
 }
 else
@@ -277,5 +278,10 @@ else
         {
             Console.Error.WriteLine($"Error deleting file: {ex.Message}");
         }
+    }
+
+ private void ViewFile(string fileName)
+    {
+        NavigationManager.NavigateTo($"/view-file/{fileName}");
     }
 }
