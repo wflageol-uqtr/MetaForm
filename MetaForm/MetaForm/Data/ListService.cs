@@ -34,6 +34,12 @@ namespace MetaForm.Data
             return Task.FromResult(list);
         }
 
+        public Task<List<Dictionary<string, string>>> GetListItemsAsync(int listId)
+        {
+            var list = lists.FirstOrDefault(l => l.Id == listId);
+            return Task.FromResult(list?.Items ?? new List<Dictionary<string, string>>());
+        }
+
         public Task AddListAsync(List list)
         {
             list.Id = lists.Any() ? lists.Max(l => l.Id) + 1 : 1;

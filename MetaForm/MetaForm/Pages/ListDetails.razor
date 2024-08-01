@@ -4,6 +4,9 @@
 @using MetaForm.models
 @inject ListService ListService
 @inject NavigationManager Navigation
+@inject IWebHostEnvironment WebHostEnvironment
+@inject FormDataService FormDataService
+@inject IJSRuntime JS
 
 <h3>@list?.Name</h3>
 
@@ -41,6 +44,7 @@
                         </td>
                     }
                     <td>
+                        <button @onclick="() => AssociateFileWithItem(item)">Associate File</button>
                         <button @onclick="() => RemoveItem(item)">Remove</button>
                     </td>
                 </tr>
@@ -57,6 +61,11 @@ else
     <p>List not found. <a href="/lists">Return to lists</a></p>
 }
 
+@if (!string.IsNullOrEmpty(Message))
+{
+    <p>@Message</p>
+}
+
 @code {
     [Parameter]
     public int Id { get; set; }
@@ -64,23 +73,28 @@ else
     private List list = new List();
     private string newColumnName = string.Empty;
     private bool isCreatingNewItem = false;
+    private string Message { get; set; } = string.Empty;
+    private Dictionary<string, string> selectedItem = null!;
+    private string uploadedFilePath = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            Console.Error.WriteLine("Initializing ListDetails component...");
             list = await ListService.GetListAsync(Id) ?? new List();
 
             if (list == null)
             {
                 Navigation.NavigateTo("/lists");
             }
-            Console.Error.WriteLine("List initialized successfully.");
+
+            // Récupérer le chemin du fichier téléversé depuis le localStorage
+            uploadedFilePath = await JS.InvokeAsync<string>("localStorage.getItem", "uploadedFilePath");
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error initializing component: {ex.Message}");
+            Message = $"Error initializing component: {ex.Message}";
         }
     }
 
@@ -92,7 +106,7 @@ else
             {
                 await ListService.AddColumnAsync(Id, newColumnName);
                 newColumnName = string.Empty;
-                list = await ListService.GetListAsync(Id); // Refresh the list
+                list = await ListService.GetListAsync(Id);
 
                 foreach (var item in list.Items)
                 {
@@ -103,23 +117,22 @@ else
                 }
 
                 await ListService.UpdateListAsync(list);
-                StateHasChanged(); // Force UI update
-                Console.Error.WriteLine("Column added and list updated.");
+                StateHasChanged();
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error adding column: {ex.Message}");
+            Message = $"Error adding column: {ex.Message}";
         }
     }
 
     private async Task AddNewItem()
     {
-        if (isCreatingNewItem) return; // Prevent multiple clicks
+        if (isCreatingNewItem) return;
         isCreatingNewItem = true;
         try
         {
-            Console.Error.WriteLine("Creating new item...");
             if (Id > 0)
             {
                 var list = await ListService.GetListAsync(Id);
@@ -138,17 +151,39 @@ else
                     list.Items.Add(newItem);
                     await ListService.UpdateListAsync(list);
                     StateHasChanged();
-                    Console.Error.WriteLine($"Created new item with ID {newItem["Id"]}.");
                 }
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error creating new item: {ex.Message}");
+            Message = $"Error creating new item: {ex.Message}";
         }
         finally
         {
             isCreatingNewItem = false;
+        }
+    }
+
+    private async Task AssociateFileWithItem(Dictionary<string, string> item)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(uploadedFilePath))
+            {
+                item["FilePath"] = uploadedFilePath;
+                await ListService.UpdateListAsync(list);
+                Message = $"File associated successfully with item {item["Id"]}.";
+            }
+            else
+            {
+                Message = "No file selected to associate.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error associating file: {ex.Message}");
+            Message = $"Error associating file: {ex.Message}";
         }
     }
 
@@ -159,10 +194,12 @@ else
             await ListService.RemoveListItemAsync(Id, item);
             list = await ListService.GetListAsync(Id); // Refresh the list
             Console.Error.WriteLine("Item removed and list updated.");
+            Message = "Item removed and list updated.";
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error removing item: {ex.Message}");
+            Message = $"Error removing item: {ex.Message}";
         }
     }
 
@@ -173,10 +210,12 @@ else
             await ListService.DeleteListAsync(Id);
             Navigation.NavigateTo("/lists");
             Console.Error.WriteLine("List deleted and navigated to lists.");
+            Message = "List deleted and navigated to lists.";
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error deleting list: {ex.Message}");
+            Message = $"Error deleting list: {ex.Message}";
         }
     }
 
@@ -197,10 +236,12 @@ else
             await ListService.UpdateListAsync(list);
             Navigation.NavigateTo("/lists");
             Console.Error.WriteLine("List updated successfully.");
+            Message = "List updated successfully.";
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error updating list: {ex.Message}");
+            Message = $"Error updating list: {ex.Message}";
         }
     }
 }
