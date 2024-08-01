@@ -1,5 +1,6 @@
 ﻿using System.IO; // Pour les opérations de fichier
 using System.Text.Json; // Pour la sérialisation et la désérialisation JSON
+using MetaForm.Data;
 using Microsoft.AspNetCore.Mvc; // Pour les fonctionnalités MVC
 
 [ApiController] // Indique que cette classe gère les requêtes HTTP en tant que contrôleur API
@@ -36,6 +37,21 @@ public class FormController : ControllerBase
             return Ok(existingData[recordId]); // Si l'enregistrement existe, le retourner
         }
         return NotFound(new { Message = "Record not found" }); // Sinon, retourner un message d'erreur
+    }
+
+    // Méthode HTTP POST pour associer un fichier à un item d'une liste
+    [HttpPost("associateFile")]
+    public async Task<IActionResult> AssociateFile([FromBody] FileAssociationRequest request)
+    {
+        try
+        {
+            await _formDataService.AssociateFileWithListItem(request.ListId, request.ItemId, request.FilePath);
+            return Ok(new { Message = "File associated successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = $"Error associating file: {ex.Message}" });
+        }
     }
 
     // Méthode pour lire le fichier JSON et retourner les données sous forme de dictionnaire

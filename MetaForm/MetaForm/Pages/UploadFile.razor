@@ -1,35 +1,60 @@
 ﻿@page "/upload-file"
+@using MetaForm.Data
+@using MetaForm.models
 @using Microsoft.AspNetCore.Components.Forms
+@using System.Text.Json
 @inject IWebHostEnvironment WebHostEnvironment
 @inject NavigationManager NavigationManager
+@inject FormDataService FormDataService
+@inject ListService ListService
+@inject IJSRuntime JS
 
 <h3>Upload HTML File</h3>
 
+<!-- Section pour sélectionner un fichier -->
 <div>
     <InputFile OnChange="StoreFile" />
 </div>
 
+<!-- Section pour sélectionner une liste -->
 <div>
-    <button @onclick="HandleFileSelected">Upload File</button>
+    <label for="listSelect">Select List:</label>
+    <select id="listSelect" @onchange="ListSelected">
+        <option value="">Select List</option>
+        @foreach (var list in lists)
+        {
+            <option value="@list.Id">@list.Name</option>
+        }
+    </select>
 </div>
+
+@if (SelectedFile != null)
+{
+    <!-- Bouton pour associer le fichier -->
+    <div>
+        <button @onclick="() => NavigateToListDetails(selectedListId)">Associate File</button>
+        <button @onclick="HandleFileSelected">Upload File</button>
+    </div>
+}
 
 @if (!string.IsNullOrEmpty(Message))
 {
     <p>@Message</p>
 }
 
+<!-- Liste des fichiers téléversés -->
 <h3>Uploaded Files</h3>
 
 @if (UploadedFiles != null && UploadedFiles.Any())
 {
     <ul>
-    @foreach (var file in UploadedFiles)
-    {
-        <li>
-            <button @onclick="() => ViewFile(file)">@file</button>
-            <button @onclick="() => DeleteFile(file)">Delete</button>
-        </li>
-    }
+        @foreach (var file in UploadedFiles)
+        {
+            <li>
+                <button @onclick="() => ViewFile(file)">@file</button>
+                <button @onclick="() => DeleteFile(file)">Delete</button>
+            </li>
+        }
     </ul>
 }
 else
@@ -38,67 +63,133 @@ else
 }
 
 @code {
-    private IBrowserFile SelectedFile { get; set; }
-    private string Message { get; set; }
-    private List<string> UploadedFiles { get; set; }
+    private IBrowserFile SelectedFile { get; set; } = null!;
+    private string Message { get; set; } = string.Empty;
+    private List<string> UploadedFiles { get; set; } = new List<string>();
+    private List<List> lists = new List<List>();
+    private int? selectedListId;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        LoadUploadedFiles();
+        try
+        {
+            lists = await ListService.GetListsAsync();
+            LoadUploadedFiles();
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error initializing component: {ex.Message}";
+        }
     }
 
-    private void StoreFile(InputFileChangeEventArgs e)
+    private async void StoreFile(InputFileChangeEventArgs e)
     {
-        SelectedFile = e.File;
-        Message = "File selected: " + SelectedFile.Name;
+        try
+        {
+            SelectedFile = e.File;
+            Message = "File selected: " + SelectedFile.Name;
+            // Enregistrer le chemin du fichier et le nom dans localStorage
+            var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", SelectedFile.Name);
+            await JS.InvokeVoidAsync("localStorage.setItem", "uploadedFilePath", uploadPath);
+            await JS.InvokeVoidAsync("localStorage.setItem", "uploadedFileName", SelectedFile.Name);
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error selecting file: {ex.Message}";
+        }
     }
 
     private async Task HandleFileSelected()
     {
-        if (SelectedFile != null)
+        try
         {
-            var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, SelectedFile.Name);
-
-            using (var stream = SelectedFile.OpenReadStream())
+            if (SelectedFile != null)
             {
-                using (var fileStream = new FileStream(uploadPath, FileMode.Create))
-                {
-                    await stream.CopyToAsync(fileStream);
-                }
-            }
+                var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", SelectedFile.Name);
 
-            Message = $"File uploaded successfully: {SelectedFile.Name}";
-            LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
+                using (var stream = SelectedFile.OpenReadStream())
+                {
+                    using (var fileStream = new FileStream(uploadPath, FileMode.Create))
+                    {
+                        await stream.CopyToAsync(fileStream);
+                    }
+                }
+
+                Message = "File uploaded successfully!";
+                LoadUploadedFiles();
+            }
+            else
+            {
+                Message = "Please select a file.";
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Message = "No file selected.";
+            Message = $"Error uploading file: {ex.Message}";
         }
     }
 
     private void LoadUploadedFiles()
     {
-        var uploadDirectory = WebHostEnvironment.WebRootPath;
-        UploadedFiles = Directory.GetFiles(uploadDirectory, "*.html").Select(Path.GetFileName).ToList();
+        try
+        {
+            var uploadDirectory = Path.Combine(WebHostEnvironment.WebRootPath, "uploads");
+            if (!Directory.Exists(uploadDirectory))
+            {
+                Directory.CreateDirectory(uploadDirectory);
+            }
+            UploadedFiles = Directory.GetFiles(uploadDirectory, "*.html").Select(Path.GetFileName).ToList();
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error loading uploaded files: {ex.Message}";
+        }
     }
 
     private void DeleteFile(string fileName)
     {
-        var filePath = Path.Combine(WebHostEnvironment.WebRootPath, fileName);
-        if (System.IO.File.Exists(filePath))
+        try
         {
-            System.IO.File.Delete(filePath);
-            Message = $"File deleted: {fileName}";
-            LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
+            var filePath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", fileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+                Message = $"File deleted: {fileName}";
+                LoadUploadedFiles();
+            }
+            else
+            {
+                Message = "File not found.";
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Message = "File not found.";
+            Message = $"Error deleting file: {ex.Message}";
         }
     }
 
- private void ViewFile(string fileName)
+    private void ViewFile(string fileName)
     {
         NavigationManager.NavigateTo($"/view-file/{fileName}");
+    }
+
+    private async Task ListSelected(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value.ToString(), out var listId))
+        {
+            selectedListId = listId;
+        }
+    }
+
+    private void NavigateToListDetails(int? listId)
+    {
+        if (listId.HasValue)
+        {
+            NavigationManager.NavigateTo($"/list-details/{listId.Value}");
+        }
+        else
+        {
+            Message = "Please select a list.";
+        }
     }
 }

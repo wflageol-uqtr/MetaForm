@@ -1,6 +1,9 @@
 ﻿using MetaForm.models;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MetaForm.Data
 {
@@ -120,7 +123,7 @@ namespace MetaForm.Data
 
         private void SaveChanges()
         {
-            var jsonData = JsonSerializer.Serialize(lists);
+            var jsonData = JsonSerializer.Serialize(lists, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(filePath, jsonData);
         }
     }

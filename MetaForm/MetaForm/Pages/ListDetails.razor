@@ -3,50 +3,83 @@
 @using MetaForm.models
 @inject ListService ListService
 @inject NavigationManager Navigation
+@inject IWebHostEnvironment WebHostEnvironment
+@inject IJSRuntime JS
 
 <h3>@list?.Name</h3>
 
 @if (list != null)
 {
-<h4>Columns</h4>
-<input @bind="newColumnName" placeholder="New Column Name" />
-<button @onclick="AddColumn">Add Column</button>
+    <h4>Columns</h4>
+    <input @bind="newColumnName" placeholder="New Column Name" />
+    <button @onclick="AddColumn">Add Column</button>
 
-<table class="table">
-    <thead>
-        <tr>
-            @foreach (var column in list.Columns)
-            {
-                <th>@column</th>
-            }
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in list.Items)
-        {
+    <table class="table">
+        <thead>
             <tr>
                 @foreach (var column in list.Columns)
                 {
-                    <td>
-                        <input @bind="item[column]" placeholder="@column" />
-                    </td>
+                    <th>@column</th>
                 }
-                <td>
-                    <button @onclick="() => RemoveItem(item)">Remove</button>
-                </td>
+                <th>Actions</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var item in list.Items)
+            {
+                <tr>
+                    @foreach (var column in list.Columns)
+                    {
+                        <td>
+                            @if (item.ContainsKey(column))
+                            {
+                                <input @bind="item[column]" placeholder="@column" />
+                            }
+                            else
+                            {
+                                <p style="color: red;">Key '@column' not found in item.</p>
+                            }
+                        </td>
+                    }
+                    <td>
+                        <button @onclick="() => AssociateFileWithItem(item)">Associate File</button>
+                        <button @onclick="() => RemoveItem(item)">Remove</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 
-<button @onclick="AddNewItem">Add New Item</button>
-<button @onclick="DeleteList">Delete List</button>
-<button @onclick="UpdateList">Update List</button>
+    <button @onclick="AddNewItem">Add New Item</button>
+    <button @onclick="DeleteList">Delete List</button>
+    <button @onclick="UpdateList">Update List</button>
+
+    <h3>Uploaded Files</h3>
+    @if (UploadedFiles != null && UploadedFiles.Any())
+    {
+        <ul>
+            @foreach (var file in UploadedFiles)
+            {
+                <li>
+                    <button @onclick="() => ViewFile(file)">@file</button>
+                    <button @onclick="() => DeleteFile(file)">Delete</button>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>No files uploaded.</p>
+    }
 }
 else
 {
-<p>List not found. <a href="/lists">Return to lists</a></p>
+    <p>List not found. <a href="/lists">Return to lists</a></p>
+}
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <p>@Message</p>
 }
 
 @code {
@@ -54,54 +87,245 @@ else
     public int Id { get; set; }
 
     private List list = new List();
-    private string newColumnName;
-    private Dictionary<string, string> newItem = new Dictionary<string, string>();
+    private string newColumnName = string.Empty;
+    private bool isCreatingNewItem = false;
+    private string Message { get; set; } = string.Empty;
+    private Dictionary<string, string> selectedItem = null!;
+    private string uploadedFilePath = string.Empty;
+    private List<string> UploadedFiles { get; set; } = new List<string>();
 
     protected override async Task OnInitializedAsync()
     {
-        list = await ListService.GetListAsync(Id);
-
-        if (list == null)
+        try
         {
-            Navigation.NavigateTo("/lists");
+            list = await ListService.GetListAsync(Id) ?? new List();
+
+            if (list == null)
+            {
+                Navigation.NavigateTo("/lists");
+            }
+
+            // Récupérer le chemin du fichier téléversé depuis le localStorage
+            uploadedFilePath = await JS.InvokeAsync<string>("localStorage.getItem", "uploadedFilePath");
+
+            // Charger les fichiers téléversés
+            LoadUploadedFiles();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error initializing component: {ex.Message}");
+            Message = $"Error initializing component: {ex.Message}";
         }
     }
 
     private async Task AddColumn()
     {
-        if (!string.IsNullOrEmpty(newColumnName))
+        try
         {
-            await ListService.AddColumnAsync(Id, newColumnName);
-            newColumnName = string.Empty;
-            list = await ListService.GetListAsync(Id); // Refresh the list
+            if (!string.IsNullOrEmpty(newColumnName))
+            {
+                await ListService.AddColumnAsync(Id, newColumnName);
+                newColumnName = string.Empty;
+                list = await ListService.GetListAsync(Id);
+
+                foreach (var item in list.Items)
+                {
+                    if (!item.ContainsKey(newColumnName))
+                    {
+                        item[newColumnName] = string.Empty;
+                    }
+                }
+
+                await ListService.UpdateListAsync(list);
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error adding column: {ex.Message}");
+            Message = $"Error adding column: {ex.Message}";
         }
     }
 
-    private void AddNewItem()
+    private async Task AddNewItem()
     {
-        var newItem = new Dictionary<string, string>();
-        foreach (var column in list.Columns)
+        if (isCreatingNewItem) return;
+        isCreatingNewItem = true;
+        try
         {
-            newItem[column] = string.Empty;
+            if (Id > 0)
+            {
+                var list = await ListService.GetListAsync(Id);
+                if (list != null)
+                {
+                    var newItem = new Dictionary<string, string>();
+
+                    foreach (var column in list.Columns)
+                    {
+                        newItem[column] = string.Empty;
+                    }
+
+                    newItem["Id"] = (list.Items.Count + 1).ToString();
+                    newItem["Name"] = "New Item";
+
+                    list.Items.Add(newItem);
+                    await ListService.UpdateListAsync(list);
+                    StateHasChanged();
+                }
+            }
         }
-        list.Items.Add(newItem);
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error creating new item: {ex.Message}");
+            Message = $"Error creating new item: {ex.Message}";
+        }
+        finally
+        {
+            isCreatingNewItem = false;
+        }
+    }
+
+    private async Task AssociateFileWithItem(Dictionary<string, string> item)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(uploadedFilePath))
+            {
+                item["FilePath"] = uploadedFilePath;
+                await ListService.UpdateListAsync(list);
+                Message = $"File associated successfully with item {item["Id"]}.";
+                // Ajouter le fichier téléversé à la liste des fichiers téléversés s'il n'existe pas
+                if (!UploadedFiles.Contains(Path.GetFileName(uploadedFilePath)))
+                {
+                    UploadedFiles.Add(Path.GetFileName(uploadedFilePath));
+                }
+                Navigation.NavigateTo("/upload-file");
+            }
+            else
+            {
+                Message = "No file selected to associate.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error associating file: {ex.Message}");
+            Message = $"Error associating file: {ex.Message}";
+        }
     }
 
     private async Task RemoveItem(Dictionary<string, string> item)
     {
-        await ListService.RemoveListItemAsync(Id, item);
-        list = await ListService.GetListAsync(Id); // Refresh the list
+        try
+        {
+            await ListService.RemoveListItemAsync(Id, item);
+            list = await ListService.GetListAsync(Id); // Refresh the list
+            Console.Error.WriteLine("Item removed and list updated.");
+            Message = "Item removed and list updated.";
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error removing item: {ex.Message}");
+            Message = $"Error removing item: {ex.Message}";
+        }
     }
 
     private async Task DeleteList()
     {
-        await ListService.DeleteListAsync(Id);
-        Navigation.NavigateTo("/lists");
+        try
+        {
+            await ListService.DeleteListAsync(Id);
+            Navigation.NavigateTo("/lists");
+            Console.Error.WriteLine("List deleted and navigated to lists.");
+            Message = "List deleted and navigated to lists.";
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error deleting list: {ex.Message}");
+            Message = $"Error deleting list: {ex.Message}";
+        }
     }
 
     private async Task UpdateList()
     {
-        await ListService.UpdateListAsync(list);
-        Navigation.NavigateTo("/lists");
+        try
+        {
+            foreach (var item in list.Items)
+            {
+                foreach (var column in list.Columns)
+                {
+                    if (!item.ContainsKey(column))
+                    {
+                        item[column] = string.Empty;
+                    }
+                }
+            }
+            await ListService.UpdateListAsync(list);
+            Navigation.NavigateTo("/lists");
+            Console.Error.WriteLine("List updated successfully.");
+            Message = "List updated successfully.";
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error updating list: {ex.Message}");
+            Message = $"Error updating list: {ex.Message}";
+        }
+    }
+
+    private void LoadUploadedFiles()
+    {
+        try
+        {
+            var uploadDirectory = Path.Combine(WebHostEnvironment.WebRootPath, "uploads");
+            if (!Directory.Exists(uploadDirectory))
+            {
+                Directory.CreateDirectory(uploadDirectory);
+                Message = $"Upload directory created: {uploadDirectory}";
+            }
+            else
+            {
+                Message = $"Upload directory exists: {uploadDirectory}";
+            }
+
+            UploadedFiles = Directory.GetFiles(uploadDirectory, "*.html").Select(Path.GetFileName).ToList();
+            if (UploadedFiles.Any())
+            {
+                Message = $"Loaded {UploadedFiles.Count} uploaded files successfully.";
+            }
+            else
+            {
+                Message = "No uploaded files found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error loading uploaded files: {ex.Message}";
+        }
+    }
+
+    private void DeleteFile(string fileName)
+    {
+        try
+        {
+            var filePath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", fileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+                Message = $"File deleted: {fileName}";
+                LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
+            }
+            else
+            {
+                Message = "File not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error deleting file: {ex.Message}";
+        }
+    }
+
+    private void ViewFile(string fileName)
+    {
+        Navigation.NavigateTo($"/view-file/{fileName}");
     }
 }
