@@ -3,8 +3,6 @@
 @using MetaForm.models
 @inject ListService ListService
 @inject NavigationManager Navigation
-@inject IWebHostEnvironment WebHostEnvironment
-@inject IJSRuntime JS
 
 <h3>@list?.Name</h3>
 
@@ -42,7 +40,6 @@
                         </td>
                     }
                     <td>
-                        <button @onclick="() => AssociateFileWithItem(item)">Associate File</button>
                         <button @onclick="() => RemoveItem(item)">Remove</button>
                     </td>
                 </tr>
@@ -53,24 +50,6 @@
     <button @onclick="AddNewItem">Add New Item</button>
     <button @onclick="DeleteList">Delete List</button>
     <button @onclick="UpdateList">Update List</button>
-
-    <h3>Uploaded Files</h3>
-    @if (UploadedFiles != null && UploadedFiles.Any())
-    {
-        <ul>
-            @foreach (var file in UploadedFiles)
-            {
-                <li>
-                    <button @onclick="() => ViewFile(file)">@file</button>
-                    <button @onclick="() => DeleteFile(file)">Delete</button>
-                </li>
-            }
-        </ul>
-    }
-    else
-    {
-        <p>No files uploaded.</p>
-    }
 }
 else
 {
@@ -90,9 +69,6 @@ else
     private string newColumnName = string.Empty;
     private bool isCreatingNewItem = false;
     private string Message { get; set; } = string.Empty;
-    private Dictionary<string, string> selectedItem = null!;
-    private string uploadedFilePath = string.Empty;
-    private List<string> UploadedFiles { get; set; } = new List<string>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -104,12 +80,6 @@ else
             {
                 Navigation.NavigateTo("/lists");
             }
-
-            // Récupérer le chemin du fichier téléversé depuis le localStorage
-            uploadedFilePath = await JS.InvokeAsync<string>("localStorage.getItem", "uploadedFilePath");
-
-            // Charger les fichiers téléversés
-            LoadUploadedFiles();
         }
         catch (Exception ex)
         {
@@ -185,34 +155,6 @@ else
         }
     }
 
-    private async Task AssociateFileWithItem(Dictionary<string, string> item)
-    {
-        try
-        {
-            if (!string.IsNullOrEmpty(uploadedFilePath))
-            {
-                item["FilePath"] = uploadedFilePath;
-                await ListService.UpdateListAsync(list);
-                Message = $"File associated successfully with item {item["Id"]}.";
-                // Ajouter le fichier téléversé à la liste des fichiers téléversés s'il n'existe pas
-                if (!UploadedFiles.Contains(Path.GetFileName(uploadedFilePath)))
-                {
-                    UploadedFiles.Add(Path.GetFileName(uploadedFilePath));
-                }
-                Navigation.NavigateTo("/upload-file");
-            }
-            else
-            {
-                Message = "No file selected to associate.";
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error associating file: {ex.Message}");
-            Message = $"Error associating file: {ex.Message}";
-        }
-    }
-
     private async Task RemoveItem(Dictionary<string, string> item)
     {
         try
@@ -269,63 +211,5 @@ else
             Console.Error.WriteLine($"Error updating list: {ex.Message}");
             Message = $"Error updating list: {ex.Message}";
         }
-    }
-
-    private void LoadUploadedFiles()
-    {
-        try
-        {
-            var uploadDirectory = Path.Combine(WebHostEnvironment.WebRootPath, "uploads");
-            if (!Directory.Exists(uploadDirectory))
-            {
-                Directory.CreateDirectory(uploadDirectory);
-                Message = $"Upload directory created: {uploadDirectory}";
-            }
-            else
-            {
-                Message = $"Upload directory exists: {uploadDirectory}";
-            }
-
-            UploadedFiles = Directory.GetFiles(uploadDirectory, "*.html").Select(Path.GetFileName).ToList();
-            if (UploadedFiles.Any())
-            {
-                Message = $"Loaded {UploadedFiles.Count} uploaded files successfully.";
-            }
-            else
-            {
-                Message = "No uploaded files found.";
-            }
-        }
-        catch (Exception ex)
-        {
-            Message = $"Error loading uploaded files: {ex.Message}";
-        }
-    }
-
-    private void DeleteFile(string fileName)
-    {
-        try
-        {
-            var filePath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", fileName);
-            if (System.IO.File.Exists(filePath))
-            {
-                System.IO.File.Delete(filePath);
-                Message = $"File deleted: {fileName}";
-                LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
-            }
-            else
-            {
-                Message = "File not found.";
-            }
-        }
-        catch (Exception ex)
-        {
-            Message = $"Error deleting file: {ex.Message}";
-        }
-    }
-
-    private void ViewFile(string fileName)
-    {
-        Navigation.NavigateTo($"/view-file/{fileName}");
     }
 }

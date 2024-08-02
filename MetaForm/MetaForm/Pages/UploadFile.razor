@@ -30,9 +30,8 @@
 
 @if (SelectedFile != null)
 {
-    <!-- Bouton pour associer le fichier -->
+    <!-- Bouton pour téléverser le fichier -->
     <div>
-        <button @onclick="() => NavigateToListDetails(selectedListId)">Associate File</button>
         <button @onclick="HandleFileSelected">Upload File</button>
     </div>
 }
@@ -51,7 +50,7 @@
         @foreach (var file in UploadedFiles)
         {
             <li>
-                <button @onclick="() => ViewFile(file)">@file</button>
+                <button @onclick="() => NavigateToAssociateFile(file)">@file</button>
                 <button @onclick="() => DeleteFile(file)">Delete</button>
             </li>
         }
@@ -103,7 +102,7 @@ else
     {
         try
         {
-            if (SelectedFile != null)
+            if (SelectedFile != null && selectedListId.HasValue)
             {
                 var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", SelectedFile.Name);
 
@@ -120,13 +119,18 @@ else
             }
             else
             {
-                Message = "Please select a file.";
+                Message = "Please select a file and a list.";
             }
         }
         catch (Exception ex)
         {
             Message = $"Error uploading file: {ex.Message}";
         }
+    }
+
+    private void NavigateToAssociateFile(string fileName)
+    {
+        NavigationManager.NavigateTo($"/associate-file/{fileName}");
     }
 
     private void LoadUploadedFiles()
@@ -168,28 +172,12 @@ else
         }
     }
 
-    private void ViewFile(string fileName)
-    {
-        NavigationManager.NavigateTo($"/view-file/{fileName}");
-    }
-
     private async Task ListSelected(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value.ToString(), out var listId))
         {
             selectedListId = listId;
-        }
-    }
-
-    private void NavigateToListDetails(int? listId)
-    {
-        if (listId.HasValue)
-        {
-            NavigationManager.NavigateTo($"/list-details/{listId.Value}");
-        }
-        else
-        {
-            Message = "Please select a list.";
+            await JS.InvokeVoidAsync("localStorage.setItem", "selectedListId", selectedListId.ToString());
         }
     }
 }
