@@ -1,18 +1,18 @@
 ﻿// Variables globales
-let formId, listName, recordId;
+let formId, listId, recordId;
 let fieldMappings = {};
 
 // Fonction pour associer un formulaire à une liste et un enregistrement
-function associateForm(fId, lName, rId = null) {
+function associateForm(fId, lId, rId = null) {
     formId = fId;
-    listName = lName;
+    listId = lId;
     recordId = rId;
 
-    console.log('associateForm called', { formId, listName, recordId }); // Message de débogage
+    console.log('associateForm called', { formId, listId, recordId }); // Message de débogage
 
     // Si un ID d'enregistrement est fourni, récupérer les données de l'enregistrement
     if (recordId) {
-        fetch(`/api/Form/getRecord/${recordId}`)
+        fetch(`/api/Form/getRecord/${listId}/${recordId}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('La réponse du réseau n\'était pas correcte');
@@ -44,14 +44,49 @@ function associateTextField(fieldId, columnName) {
     console.log('associateTextField called', { fieldId, columnName }); // Message de débogage
 }
 
-// Fonction pour associer un champ de sélection multiple à une colonne d'une autre liste
-function associateMultiSelectField(fieldId, refList, refColumn) {
+// Fonction pour associer un champ de sélection unique à une colonne d'une autre liste
+function associateSelectField(fieldId, refListId, refColumn, displayColumn, targetColumnName) {
     fieldMappings[fieldId] = {
-        type: 'multi-select',
-        refList: refList,
-        refColumn: refColumn
+        type: 'select',
+        refList: refListId,
+        refColumn: refColumn,
+        displayColumn: displayColumn,
+        targetColumn: targetColumnName
     };
-    console.log('associateMultiSelectField called', { fieldId, refList, refColumn }); // Message de débogage
+    console.log('associateSelectField called', { fieldId, refListId, refColumn, displayColumn, targetColumnName }); // Message de débogage
+
+    // Récupérer les options de la liste et les ajouter au champ de sélection
+    fetch(`/api/Form/getOptions/${refListId}`)
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => { throw new Error(text); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Options récupérées:', data); // Message de débogage
+            const selectField = document.getElementById(fieldId);
+            data.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option[refColumn];
+                optionElement.text = option[displayColumn];
+                selectField.add(optionElement);
+            });
+
+            // Ajouter un événement pour changer la couleur de fond en vert lorsqu'une option est sélectionnée
+            selectField.addEventListener('change', function () {
+                for (let i = 0; i < selectField.options.length; i++) {
+                    if (selectField.options[i].selected) {
+                        selectField.options[i].style.backgroundColor = 'lightgreen';
+                    } else {
+                        selectField.options[i].style.backgroundColor = '';
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Erreur lors de la récupération des options:', error); // Message de débogage
+        });
 }
 
 // Fonction pour afficher des messages sur le site
@@ -76,25 +111,27 @@ function saveCurrentRecord() {
 
         if (mapping.type === 'text') {
             formData[mapping.column] = field.value;
-        } else if (mapping.type === 'multi-select') {
-            const selectedOptions = Array.from(field.selectedOptions).map(option => option.value);
-            formData[mapping.refColumn] = selectedOptions;
+        } else if (mapping.type === 'select') {
+            // Pour les champs de sélection, récupérer la valeur sélectionnée
+            const selectedOption = field.value;
+            console.log('Selected option for field', fieldId, selectedOption); // Log de l'option sélectionnée
+            formData[mapping.targetColumn] = selectedOption;
         }
     }
 
-    console.log('formData:', formData); // Message de débogage
+    console.log('formData avant envoi:', formData); // Message de débogage
 
     const requestOptions = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listName, recordId, formData })
+        body: JSON.stringify({ ListId: listId, RecordId: recordId, FormData: formData })
     };
 
     // Envoyer les données du formulaire au serveur
     fetch('/api/Form/saveRecord', requestOptions)
         .then(response => {
             if (!response.ok) {
-                throw new Error('La réponse du réseau n\'était pas correcte');
+                return response.text().then(text => { throw new Error(text); });
             }
             return response.json();
         })
