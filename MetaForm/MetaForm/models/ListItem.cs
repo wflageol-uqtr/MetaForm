@@ -3,6 +3,6 @@
     public class ListItem
     {
         public int Id { get; set; }
-        public string Value { get; set; }
+        public Dictionary<string, string> Values { get; set; } = new Dictionary<string, string>();
     }
 }

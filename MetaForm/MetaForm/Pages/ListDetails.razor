@@ -8,54 +8,53 @@
 
 @if (list != null)
 {
-<h4>Columns</h4>
-<input @bind="newColumnName" placeholder="New Column Name" />
-<button @onclick="AddColumn">Add Column</button>
+    <h4>Columns</h4>
+    <input @bind="newColumnName" placeholder="New Column Name" />
+    <button @onclick="AddColumn">Add Column</button>
 
-<table class="table">
-    <thead>
-        <tr>
-            @foreach (var column in list.Columns)
-            {
-                <th>@column</th>
-            }
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in list.Items)
-        {
+    <table class="table">
+        <thead>
             <tr>
                 @foreach (var column in list.Columns)
                 {
-                    <td>
-                        <input @bind="item[column]" placeholder="@column" />
-                    </td>
+                    <th>@column</th>
                 }
-                <td>
-                    <button @onclick="() => RemoveItem(item)">Remove</button>
-                </td>
+                <th>Actions</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var item in list.Items)
+            {
+                <tr>
+                    @foreach (var column in list.Columns)
+                    {
+                        <td>
+                            <input @bind="item.Values[column]" placeholder="@column" />
+                        </td>
+                    }
+                    <td>
+                        <button @onclick="() => RemoveItem(item.Id)">Remove</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 
-<button @onclick="AddNewItem">Add New Item</button>
-<button @onclick="DeleteList">Delete List</button>
-<button @onclick="UpdateList">Update List</button>
+    <button @onclick="AddNewItem">Add New Item</button>
+    <button @onclick="DeleteList">Delete List</button>
+    <button @onclick="UpdateList">Update List</button>
 }
 else
 {
-<p>List not found. <a href="/lists">Return to lists</a></p>
+    <p>List not found. <a href="/lists">Return to lists</a></p>
 }
 
 @code {
     [Parameter]
     public int Id { get; set; }
 
-    private List list = new List();
+    private List list;
     private string newColumnName;
-    private Dictionary<string, string> newItem = new Dictionary<string, string>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -77,19 +76,21 @@ else
         }
     }
 
-    private void AddNewItem()
+    private async Task AddNewItem()
     {
-        var newItem = new Dictionary<string, string>();
+        var newItemValues = new Dictionary<string, string>();
         foreach (var column in list.Columns)
         {
-            newItem[column] = string.Empty;
+            newItemValues[column] = string.Empty;
         }
-        list.Items.Add(newItem);
+
+        await ListService.AddListItemAsync(Id, newItemValues);
+        list = await ListService.GetListAsync(Id); // Refresh the list
     }
 
-    private async Task RemoveItem(Dictionary<string, string> item)
+    private async Task RemoveItem(int itemId)
     {
-        await ListService.RemoveListItemAsync(Id, item);
+        await ListService.RemoveListItemAsync(Id, itemId);
         list = await ListService.GetListAsync(Id); // Refresh the list
     }
 

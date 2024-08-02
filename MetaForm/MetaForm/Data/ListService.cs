@@ -1,6 +1,9 @@
 ﻿using MetaForm.models;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace MetaForm.Data
 {
@@ -8,13 +11,21 @@ namespace MetaForm.Data
     {
         private readonly string filePath = "data.json";
         private List<List> lists;
+        private readonly object fileLock = new object();
 
         public ListService()
         {
             if (File.Exists(filePath))
             {
-                var jsonData = File.ReadAllText(filePath);
-                lists = JsonSerializer.Deserialize<List<List>>(jsonData) ?? new List<List>();
+                try
+                {
+                    var jsonData = File.ReadAllText(filePath);
+                    lists = JsonSerializer.Deserialize<List<List>>(jsonData) ?? new List<List>();
+                }
+                catch (JsonException)
+                {
+                    lists = new List<List>();
+                }
             }
             else
             {
@@ -62,7 +73,7 @@ namespace MetaForm.Data
                 list.Columns.Add(columnName);
                 foreach (var item in list.Items)
                 {
-                    item[columnName] = string.Empty;
+                    item.Values[columnName] = string.Empty;
                 }
                 SaveChanges();
             }
@@ -74,26 +85,28 @@ namespace MetaForm.Data
             var list = lists.FirstOrDefault(l => l.Id == listId);
             if (list != null)
             {
-                foreach (var column in list.Columns)
+                var newItem = new ListItem
                 {
-                    if (!item.ContainsKey(column))
-                    {
-                        item[column] = string.Empty;
-                    }
-                }
-                list.Items.Add(item);
+                    Id = list.Items.Any() ? list.Items.Max(i => i.Id) + 1 : 1,
+                    Values = item
+                };
+                list.Items.Add(newItem);
                 SaveChanges();
             }
             return Task.CompletedTask;
         }
 
-        public Task RemoveListItemAsync(int listId, Dictionary<string, string> item)
+        public Task RemoveListItemAsync(int listId, int itemId)
         {
             var list = lists.FirstOrDefault(l => l.Id == listId);
             if (list != null)
             {
-                list.Items.Remove(item);
-                SaveChanges();
+                var item = list.Items.FirstOrDefault(i => i.Id == itemId);
+                if (item != null)
+                {
+                    list.Items.Remove(item);
+                    SaveChanges();
+                }
             }
             return Task.CompletedTask;
         }
@@ -104,24 +117,18 @@ namespace MetaForm.Data
             if (list != null)
             {
                 lists.Remove(list);
-                ReassignIds();
                 SaveChanges();
             }
             return Task.CompletedTask;
         }
 
-        private void ReassignIds()
-        {
-            for (int i = 0; i < lists.Count; i++)
-            {
-                lists[i].Id = i + 1;
-            }
-        }
-
         private void SaveChanges()
         {
-            var jsonData = JsonSerializer.Serialize(lists);
-            File.WriteAllText(filePath, jsonData);
+            lock (fileLock)
+            {
+                var jsonData = JsonSerializer.Serialize(lists);
+                File.WriteAllText(filePath, jsonData);
+            }
         }
     }
 }
