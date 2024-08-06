@@ -1,34 +1,44 @@
 [
   {
     "Id": 1,
-    "Name": "lone",
+    "Name": "l1",
     "Columns": [
-      "idi"
+      "idl1"
     ],
     "Items": [
       {
-        "idi": "",
+        "idl1": "",
         "Id": "1",
-        "Name": "New Item",
-        "FilePath": "X:\\projf\\MetaForm\\MetaForm\\MetaForm\\wwwroot\\uploads\\htmlpage.html"
+        "Name": "New Item"
       }
     ]
   },
   {
     "Id": 2,
-    "Name": "ltwo",
-    "Columns": [],
+    "Name": "l2",
+    "Columns": [
+      "idl2"
+    ],
     "Items": [
       {
+        "idl2": "",
         "Id": "1",
-        "FilePath": "X:\\projf\\MetaForm\\MetaForm\\MetaForm\\wwwroot\\uploads\\Inscrption.html"
+        "Name": "New Item"
       }
     ]
   },
   {
     "Id": 3,
     "Name": "l3",
-    "Columns": [],
-    "Items": []
+    "Columns": [
+      "idl3"
+    ],
+    "Items": [
+      {
+        "idl3": "",
+        "Id": "1",
+        "Name": "New Item"
+      }
+    ]
   }
 ]
