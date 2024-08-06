@@ -1,0 +1,184 @@
+﻿@page "/associate-file/{fileName}"
+@using MetaForm.Data
+@using MetaForm.models
+@using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
+@using System.Text.Json
+@inject IWebHostEnvironment WebHostEnvironment
+@inject NavigationManager NavigationManager
+@inject FormDataService FormDataService
+@inject ListService ListService
+@inject IJSRuntime JS
+
+<h3>Associate File: @FileName</h3>
+
+@if (selectedList != null)
+{
+    <button @onclick="() => showAddNewItem = true">Add New Item</button>
+    @if (showAddNewItem)
+    {
+        <div>
+            <h4>Add New Item</h4>
+            @foreach (var column in selectedList.Columns)
+            {
+                <input @bind="newItem[column]" placeholder="@column" />
+            }
+            <button @onclick="AddNewItem">Save Item</button>
+            <button @onclick="() => showAddNewItem = false">Cancel</button>
+        </div>
+    }
+
+    @if (selectedList.Items.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    @foreach (var column in selectedList.Columns)
+                    {
+                        <th>@column</th>
+                    }
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in selectedList.Items)
+                {
+                    <tr>
+                        @foreach (var column in selectedList.Columns)
+                        {
+                            <td>@(item.ContainsKey(column) ? item[column] : "N/A")</td>
+                        }
+                        <td>
+                            <button @onclick="() => AssociateFileWithItem(item)">Associate File</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>No items found in the list. Please add a new item.</p>
+    }
+}
+else
+{
+    <p>@Message</p>
+}
+
+@code {
+    [Parameter] public string FileName { get; set; } = string.Empty;
+    private MetaForm.models.List? selectedList = null;
+    private string Message { get; set; } = string.Empty;
+    private Dictionary<string, string> newItem = new();
+    private bool showAddNewItem = false;
+    private bool isCreatingNewItem = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Console.WriteLine($"Initializing component for file: {FileName}");
+            var uploadedFileToListJson = await JS.InvokeAsync<string>("localStorage.getItem", "uploadedFileToList");
+
+            if (!string.IsNullOrEmpty(uploadedFileToListJson))
+            {
+                var uploadedFileToList = JsonSerializer.Deserialize<Dictionary<string, int>>(uploadedFileToListJson);
+                if (uploadedFileToList != null && uploadedFileToList.TryGetValue(FileName, out var listId))
+                {
+                    selectedList = await ListService.GetListAsync(listId);
+                    Console.WriteLine($"Selected list: {JsonSerializer.Serialize(selectedList)}");
+                    if (selectedList == null)
+                    {
+                        Message = "List not found.";
+                    }
+                }
+                else
+                {
+                    Message = "Invalid List ID for the file.";
+                }
+            }
+            else
+            {
+                Message = "No data found in localStorage.";
+            }
+
+            InitializeNewItem();
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error initializing component: {ex.Message}";
+            Console.WriteLine("Error initializing component: " + ex);
+        }
+    }
+
+    private void InitializeNewItem()
+    {
+        if (selectedList != null)
+        {
+            newItem = new Dictionary<string, string>();
+            foreach (var column in selectedList.Columns)
+            {
+                newItem[column] = string.Empty;
+            }
+            newItem["Id"] = (selectedList.Items.Count + 1).ToString(); // Assign a unique ID
+        }
+    }
+
+    private async Task AssociateFileWithItem(Dictionary<string, string> item)
+    {
+        try
+        {
+            var filePath = await JS.InvokeAsync<string>("localStorage.getItem", "uploadedFilePath");
+            if (selectedList != null && !string.IsNullOrEmpty(filePath))
+            {
+                item["FilePath"] = filePath;
+                await ListService.UpdateListAsync(selectedList);
+                Message = $"File associated successfully with item {item["Id"]}.";
+                NavigationManager.NavigateTo($"/view-file/{FileName}");
+            }
+            else
+            {
+                Message = "File path or selected list is invalid.";
+                Console.WriteLine("File path or selected list is invalid.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error associating file: {ex.Message}";
+            Console.WriteLine("Error associating file: " + ex);
+        }
+    }
+
+    private async Task AddNewItem()
+    {
+        if (isCreatingNewItem) return;
+        isCreatingNewItem = true;
+
+        try
+        {
+            if (selectedList != null)
+            {
+                selectedList.Items.Add(newItem);
+                await ListService.UpdateListAsync(selectedList);
+                Message = "New item added successfully.";
+                showAddNewItem = false;
+                InitializeNewItem(); // Re-initialize for next new item
+            }
+            else
+            {
+                Message = "Selected list is invalid.";
+                Console.WriteLine("Selected list is invalid.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error adding new item: {ex.Message}";
+            Console.WriteLine("Error adding new item: " + ex);
+        }
+        finally
+        {
+            isCreatingNewItem = false;
+        }
+    }
+}

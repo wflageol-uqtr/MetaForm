@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <_ContentIncludedByDefault Remove="Pages\UploadFile.razor" />
+    <_ContentIncludedByDefault Remove="wwwroot\htmlpage.html" />
   </ItemGroup>
 
 </Project>

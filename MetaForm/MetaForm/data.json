@@ -1,1 +1,34 @@
-[{"Id":1,"Name":"ggg","Columns":["gg","g"],"Items":[{"gg":"","g":""},{"gg":"","g":""}]},{"Id":2,"Name":"liste2","Columns":["col1","col2"],"Items":[{"col1":"","col2":""},{"col1":"","col2":""}]}]
+[
+  {
+    "Id": 1,
+    "Name": "lone",
+    "Columns": [
+      "idi"
+    ],
+    "Items": [
+      {
+        "idi": "",
+        "Id": "1",
+        "Name": "New Item",
+        "FilePath": "X:\\projf\\MetaForm\\MetaForm\\MetaForm\\wwwroot\\uploads\\htmlpage.html"
+      }
+    ]
+  },
+  {
+    "Id": 2,
+    "Name": "ltwo",
+    "Columns": [],
+    "Items": [
+      {
+        "Id": "1",
+        "FilePath": "X:\\projf\\MetaForm\\MetaForm\\MetaForm\\wwwroot\\uploads\\Inscrption.html"
+      }
+    ]
+  },
+  {
+    "Id": 3,
+    "Name": "l3",
+    "Columns": [],
+    "Items": []
+  }
+]
