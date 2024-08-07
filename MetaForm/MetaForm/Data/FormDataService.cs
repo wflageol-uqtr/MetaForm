@@ -14,6 +14,8 @@ namespace MetaForm.Data
     {
         private readonly HttpClient _httpClient;
         private readonly string filePath = "data.json";
+        private readonly string associationsFilePath = "fileAssociations.json";
+        private Dictionary<string, int> fileAssociations = new Dictionary<string, int>();
         private List<List> lists = new List<List>();
         private readonly ILogger<FormDataService> logger;
 
@@ -36,10 +38,17 @@ namespace MetaForm.Data
                     Lists = JsonSerializer.Deserialize<List<List>>(jsonData) ?? new List<List>();
                     logger.LogInformation("Loaded lists from file: {Lists}", jsonData);
                 }
+
+                if (File.Exists(associationsFilePath))
+                {
+                    var associationsData = File.ReadAllText(associationsFilePath);
+                    fileAssociations = JsonSerializer.Deserialize<Dictionary<string, int>>(associationsData) ?? new Dictionary<string, int>();
+                    logger.LogInformation("Loaded file associations from file: {Associations}", associationsData);
+                }
             }
             catch (Exception ex)
             {
-                logger.LogError("Error loading lists from file: {Error}", ex.Message);
+                logger.LogError("Error loading data from file: {Error}", ex.Message);
             }
         }
 
@@ -63,37 +72,22 @@ namespace MetaForm.Data
             return hardcodedData;
         }
 
-        public async Task AssociateFileWithListItem(int listId, int itemId, string filePath)
+        public async Task AssociateFileWithListItemAsync(string fileName, int listId)
         {
-            logger.LogInformation("Associating file {FilePath} with list ID {ListId} and item ID {ItemId}", filePath, listId, itemId);
-
-            try
-            {
-                var request = new FileAssociationRequest
-                {
-                    ListId = listId,
-                    ItemId = itemId,
-                    FilePath = filePath
-                };
-
-                var jsonRequest = JsonSerializer.Serialize(request);
-                var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-
-                var response = await _httpClient.PostAsync("api/form/associateFile", content);
-                response.EnsureSuccessStatusCode();
-            }
-            catch (Exception ex)
-            {
-                logger.LogError("Error associating file: {Error}", ex.Message);
-            }
+            fileAssociations[fileName] = listId;
+            await SaveChangesAsync();
         }
 
-        public void SaveChanges()
+        private void SaveChanges()
         {
             try
             {
                 var jsonData = JsonSerializer.Serialize(Lists, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(filePath, jsonData);
+
+                var associationsData = JsonSerializer.Serialize(fileAssociations, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(associationsFilePath, associationsData);
+
                 logger.LogInformation("Saved changes to file: {FilePath}", filePath);
             }
             catch (Exception ex)
@@ -105,6 +99,11 @@ namespace MetaForm.Data
         public async Task SaveChangesAsync()
         {
             await Task.Run(() => SaveChanges());
+        }
+
+        public async Task<int?> GetListIdForFileAsync(string fileName)
+        {
+            return fileAssociations.TryGetValue(fileName, out var listId) ? listId : (int?)null;
         }
     }
 

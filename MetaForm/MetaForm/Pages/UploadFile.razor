@@ -6,8 +6,6 @@
 @inject IWebHostEnvironment WebHostEnvironment
 @inject NavigationManager NavigationManager
 @inject FormDataService FormDataService
-@inject ListService ListService
-@inject IJSRuntime JS
 
 <h3>Upload HTML File</h3>
 
@@ -73,7 +71,7 @@ else
         try
         {
             Console.WriteLine("Initializing component...");
-            lists = await ListService.GetListsAsync();
+            lists = FormDataService.Lists;
             Console.WriteLine("Loaded lists: " + JsonSerializer.Serialize(lists));
             LoadUploadedFiles();
         }
@@ -91,12 +89,6 @@ else
             SelectedFile = e.File;
             Message = "File selected: " + SelectedFile.Name;
             Console.WriteLine("File selected: " + SelectedFile.Name);
-
-            // Enregistrer le chemin du fichier et le nom dans localStorage
-            var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", SelectedFile.Name);
-            await JS.InvokeVoidAsync("localStorage.setItem", "uploadedFilePath", uploadPath);
-            await JS.InvokeVoidAsync("localStorage.setItem", "uploadedFileName", SelectedFile.Name);
-            Console.WriteLine("Stored file path and name in localStorage.");
         }
         catch (Exception ex)
         {
@@ -122,18 +114,8 @@ else
                     }
                 }
 
-                // Enregistrer l'association entre le fichier et la liste dans localStorage
-                var uploadedFileToListJson = await JS.InvokeAsync<string>("localStorage.getItem", "uploadedFileToList");
-                var uploadedFileToList = string.IsNullOrEmpty(uploadedFileToListJson)
-                    ? new Dictionary<string, int>()
-                    : JsonSerializer.Deserialize<Dictionary<string, int>>(uploadedFileToListJson);
-
-                if (uploadedFileToList != null)
-                {
-                    uploadedFileToList[SelectedFile.Name] = selectedListId.Value;
-                    uploadedFileToListJson = JsonSerializer.Serialize(uploadedFileToList);
-                    await JS.InvokeVoidAsync("localStorage.setItem", "uploadedFileToList", uploadedFileToListJson);
-                }
+                // Enregistrer l'association entre le fichier et la liste dans le stockage local du serveur
+                await FormDataService.AssociateFileWithListItemAsync(SelectedFile.Name, selectedListId.Value);
 
                 Message = "File uploaded successfully!";
                 Console.WriteLine("File uploaded successfully.");
@@ -209,7 +191,6 @@ else
         {
             selectedListId = listId;
             Console.WriteLine("List selected: " + selectedListId);
-            await JS.InvokeVoidAsync("localStorage.setItem", "selectedListId", selectedListId.ToString());
         }
     }
 }
