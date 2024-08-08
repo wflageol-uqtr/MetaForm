@@ -2,8 +2,7 @@
 @using MetaForm.Data
 @using MetaForm.models
 @using Microsoft.AspNetCore.Components
-@using System.Text.Json
-@using Microsoft.JSInterop
+@using System.Text.Json;
 @inject IWebHostEnvironment WebHostEnvironment
 @inject NavigationManager NavigationManager
 @inject FormDataService FormDataService
@@ -79,28 +78,20 @@ else
         try
         {
             Console.WriteLine($"Initializing component for file: {FileName}");
-            var uploadedFileToListJson = await JS.InvokeAsync<string>("localStorage.getItem", "uploadedFileToList");
 
-            if (!string.IsNullOrEmpty(uploadedFileToListJson))
+            var listId = await FormDataService.GetListIdForFileAsync(FileName);
+            if (listId.HasValue)
             {
-                var uploadedFileToList = JsonSerializer.Deserialize<Dictionary<string, int>>(uploadedFileToListJson);
-                if (uploadedFileToList != null && uploadedFileToList.TryGetValue(FileName, out var listId))
+                selectedList = await ListService.GetListAsync(listId.Value);
+                Console.WriteLine($"Selected list: {JsonSerializer.Serialize(selectedList)}");
+                if (selectedList == null)
                 {
-                    selectedList = await ListService.GetListAsync(listId);
-                    Console.WriteLine($"Selected list: {JsonSerializer.Serialize(selectedList)}");
-                    if (selectedList == null)
-                    {
-                        Message = "List not found.";
-                    }
-                }
-                else
-                {
-                    Message = "Invalid List ID for the file.";
+                    Message = "List not found.";
                 }
             }
             else
             {
-                Message = "No data found in localStorage.";
+                Message = "No data found in associations file.";
             }
 
             InitializeNewItem();
@@ -129,7 +120,7 @@ else
     {
         try
         {
-            var filePath = await JS.InvokeAsync<string>("localStorage.getItem", "uploadedFilePath");
+            var filePath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", FileName);
             if (selectedList != null && !string.IsNullOrEmpty(filePath))
             {
                 var item = selectedList.Items.FirstOrDefault(i => i.Id == itemId);
