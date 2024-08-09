@@ -1,5 +1,6 @@
 ﻿@using MetaForm.Data
 @using MetaForm.models
+@inject FormDataService FormDataService
 @page "/lists"
 
 @inject ListService ListService
@@ -30,5 +31,7 @@
     {
         await ListService.DeleteListAsync(id);
         lists = await ListService.GetListsAsync(); // Refresh the list
+        FormDataService.ReloadLists();
+
     }
 }

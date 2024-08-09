@@ -16,6 +16,7 @@
 
 <!-- Section pour sélectionner une liste -->
 <div>
+  
     <label for="listSelect">Select List:</label>
     <select id="listSelect" @onchange="ListSelected">
         <option value="">Select List</option>
@@ -65,22 +66,26 @@ else
     private List<string> UploadedFiles { get; set; } = new List<string>();
     private List<List> lists = new List<List>();
     private int? selectedListId;
+    private bool isInitialized = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        try
+        if (!isInitialized)
         {
-            Console.WriteLine("Initializing component...");
-            lists = FormDataService.Lists;
-            Console.WriteLine("Loaded lists: " + JsonSerializer.Serialize(lists));
+            ReloadLists();
             LoadUploadedFiles();
-        }
-        catch (Exception ex)
-        {
-            Message = $"Error initializing component: {ex.Message}";
-            Console.WriteLine("Error initializing component: " + ex);
+            isInitialized = true;
+            StateHasChanged();
         }
     }
+
+    private void ReloadLists()
+    {
+        lists = FormDataService.Lists;
+        Console.WriteLine("Loaded lists: " + JsonSerializer.Serialize(lists));
+    }
+
+ 
 
     private async void StoreFile(InputFileChangeEventArgs e)
     {

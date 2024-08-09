@@ -29,7 +29,11 @@ namespace MetaForm.Data
         {
             _httpClient = httpClient;
             this.logger = logger;
+            LoadData();
+        }
 
+        private void LoadData()
+        {
             try
             {
                 if (File.Exists(filePath))
@@ -52,7 +56,14 @@ namespace MetaForm.Data
             }
         }
 
-        public Dictionary<string, object> GetHardcodedData()
+        public void ReloadLists()
+        {
+            LoadData();
+        }
+
+    
+
+    public Dictionary<string, object> GetHardcodedData()
         {
             var hardcodedData = new Dictionary<string, object>
             {
