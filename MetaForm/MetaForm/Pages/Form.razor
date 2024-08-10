@@ -7,22 +7,18 @@
 <div id="messageContainer" style="display:none; margin-bottom: 10px;"></div>
 
 <form id="exampleForm">
-    <label for="name">Nom ou Titre:</label>
-    <input type="text" id="name" name="name"><br><br>
+    <label for="Nom">Nom:</label>
+    <input type="text" id="Nom" name="Nom"><br><br>
 
-    <label for="region">Région:</label>
-    <select id="region" name="region">
-        <option value="aucun">(Aucun)</option>
-        <option value="north">North</option>
-        <option value="south">South</option>
-        <option value="east">East</option>
-        <option value="west">West</option>
+    <label for="Age">Age:</label>
+    <input type="text" id="Age" name="Age"><br><br>
+
+    <label for="Region">Région:</label>
+    <select id="Region" name="Region">
+        <!-- Options will be dynamically populated by JavaScript -->
     </select><br><br>
 
-    <label for="ug">UG:</label>
-    <input type="text" id="ug" name="ug"><br><br>
-
-    <!-- Ajoutez d'autres champs ici -->
+    <!-- Ajoutez d'autres champs ici si nécessaire -->
 
     <button type="button" @onclick="SaveRecord">Sauvegarder</button>
 </form>
@@ -32,10 +28,10 @@
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("associateForm", "exampleForm", "listName", "record1");
-            await JSRuntime.InvokeVoidAsync("associateTextField", "name", "name");
-            await JSRuntime.InvokeVoidAsync("associateTextField", "ug", "ug");
-            await JSRuntime.InvokeVoidAsync("associateMultiSelectField", "region", "regionsList", "region");
+            await JSRuntime.InvokeVoidAsync("associateForm", "exampleForm", 1, 1); // Person ID 1 from List ID 1
+            await JSRuntime.InvokeVoidAsync("associateTextField", "Nom", "Nom");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "Age", "Age");
+            await JSRuntime.InvokeVoidAsync("associateSelectField", "Region", 2, "Id", "Nom", "Region"); //
         }
     }
 

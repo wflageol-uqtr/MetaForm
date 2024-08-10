@@ -1,67 +1,103 @@
-﻿using System.IO; // Pour les opérations de fichier
-using System.Text.Json; // Pour la sérialisation et la désérialisation JSON
-using Microsoft.AspNetCore.Mvc; // Pour les fonctionnalités MVC
+﻿using MetaForm.Data;
+using MetaForm.models;
+using Microsoft.AspNetCore.Mvc;
 
-[ApiController] // Indique que cette classe gère les requêtes HTTP en tant que contrôleur API
-[Route("api/[controller]")] // Définit la route pour accéder à ce contrôleur
+[ApiController]
+[Route("api/[controller]")]
 public class FormController : ControllerBase
 {
-    private readonly FormDataService _formDataService; // Service pour manipuler les données de formulaire
-    private readonly string jsonFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "formData.json"); // Chemin du fichier JSON
+    private readonly ListService _listService;
 
-    // Constructeur du contrôleur, initialise le service de données de formulaire
-    public FormController(FormDataService formDataService)
+    // Constructeur injectant le ListService pour accéder aux listes
+    public FormController(ListService listService)
     {
-        _formDataService = formDataService;
+        _listService = listService;
     }
 
-    // Méthode HTTP POST pour sauvegarder un enregistrement
+    // Endpoint pour sauvegarder un enregistrement
     [HttpPost("saveRecord")]
-    public IActionResult SaveRecord([FromBody] FormData data)
+    public async Task<IActionResult> SaveRecord([FromBody] FormData data)
     {
-        var existingData = ReadJsonFile(); // Lire les données existantes à partir du fichier JSON
-        existingData[data.RecordId] = data.formData; // Mettre à jour ou ajouter les nouvelles données
-        WriteJsonFile(existingData); // Écrire les données mises à jour dans le fichier JSON
-
-        return Ok(new { Message = "Record saved successfully" }); // Retourner un message de succès
-    }
-
-    // Méthode HTTP GET pour obtenir un enregistrement spécifique
-    [HttpGet("getRecord/{recordId}")]
-    public IActionResult GetRecord(string recordId)
-    {
-        var existingData = ReadJsonFile(); // Lire les données existantes à partir du fichier JSON
-        if (existingData.ContainsKey(recordId))
+        // Afficher les données reçues pour le débogage
+        Console.WriteLine("Données reçues pour saveRecord:");
+        Console.WriteLine($"ListId: {data.ListId}, RecordId: {data.RecordId}");
+        foreach (var kvp in data.Formdata)
         {
-            return Ok(existingData[recordId]); // Si l'enregistrement existe, le retourner
-        }
-        return NotFound(new { Message = "Record not found" }); // Sinon, retourner un message d'erreur
-    }
-
-    // Méthode pour lire le fichier JSON et retourner les données sous forme de dictionnaire
-    private Dictionary<string, Dictionary<string, object>> ReadJsonFile()
-    {
-        if (!System.IO.File.Exists(jsonFilePath))
-        {
-            return new Dictionary<string, Dictionary<string, object>>(); // Si le fichier n'existe pas, retourner un dictionnaire vide
+            Console.WriteLine($"{kvp.Key}: {kvp.Value}");
         }
 
-        var jsonData = System.IO.File.ReadAllText(jsonFilePath); // Lire tout le contenu du fichier JSON
-        return JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>(jsonData); // Désérialiser le JSON en dictionnaire
+        // Récupérer la liste correspondant à ListId
+        var list = await _listService.GetListAsync(data.ListId);
+        if (list == null)
+        {
+            return NotFound(new { Message = "List not found" });
+        }
+
+        // Vérifier si l'enregistrement existe déjà
+        var existingItem = list.Items.FirstOrDefault(item => item.Id == data.RecordId);
+        if (existingItem != null)
+        {
+            // Mettre à jour l'enregistrement existant
+            existingItem.Values = data.Formdata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString());
+            await _listService.UpdateListAsync(list);
+        }
+        else
+        {
+            // Créer un nouvel enregistrement
+            var newItem = new ListItem
+            {
+                Id = list.Items.Any() ? list.Items.Max(item => item.Id) + 1 : 1,
+                Values = data.Formdata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString())
+            };
+            list.Items.Add(newItem);
+            await _listService.UpdateListAsync(list);
+        }
+
+        // Retourner un message de succès
+        return Ok(new { Message = "Record saved successfully" });
     }
 
-    // Méthode pour écrire les données dans le fichier JSON
-    private void WriteJsonFile(Dictionary<string, Dictionary<string, object>> data)
+    // Endpoint pour récupérer un enregistrement
+    [HttpGet("getRecord/{listId}/{recordId}")]
+    public async Task<IActionResult> GetRecord(int listId, int recordId)
     {
-        var jsonData = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }); // Sérialiser les données avec une mise en forme
-        System.IO.File.WriteAllText(jsonFilePath, jsonData); // Écrire les données dans le fichier
+        // Récupérer la liste correspondant à ListId
+        var list = await _listService.GetListAsync(listId);
+        if (list == null)
+        {
+            return NotFound(new { Message = "List not found" });
+        }
+
+        // Récupérer l'enregistrement correspondant à RecordId
+        var existingItem = list.Items.FirstOrDefault(item => item.Id == recordId);
+        if (existingItem != null)
+        {
+            return Ok(existingItem.Values);
+        }
+        return NotFound(new { Message = "Record not found" });
+    }
+
+    // Endpoint pour récupérer les options d'une liste
+    [HttpGet("getOptions/{listId}")]
+    public async Task<IActionResult> GetOptions(int listId)
+    {
+        // Récupérer la liste correspondant à ListId
+        var list = await _listService.GetListAsync(listId);
+        if (list == null)
+        {
+            return NotFound(new { Message = "List not found" });
+        }
+
+        // Sélectionner les valeurs des items de la liste
+        var options = list.Items.Select(item => item.Values).ToList();
+        return Ok(options);
     }
 }
 
 // Classe pour représenter les données de formulaire
 public class FormData
 {
-    public string ListName { get; set; } // Nom de la liste
-    public string RecordId { get; set; } // ID de l'enregistrement
-    public Dictionary<string, object> formData { get; set; } // Dictionnaire contenant les données du formulaire
+    public int ListId { get; set; } // ID de la liste
+    public int RecordId { get; set; } // ID de l'enregistrement
+    public Dictionary<string, object> Formdata { get; set; } // Dictionnaire contenant les données du formulaire
 }
