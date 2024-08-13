@@ -3,11 +3,12 @@
 @using MetaForm.models
 @inject ListService ListService
 @inject NavigationManager Navigation
+@inject FormDataService FormDataService
 
 <h3>Create New List</h3>
 
 <input @bind="name" placeholder="List Name" />
-<button @onclick="Createlist">Create   </button>
+<button @onclick="Createlist">Create</button>
 
 @code {
     private string name;
@@ -17,6 +18,10 @@
         var newList = new List { Name = name };
         await ListService.AddListAsync(newList);
         name = string.Empty;
-        Navigation.NavigateTo("/lists");
+
+        // Recharger les listes après la création
+        FormDataService.ReloadLists();
+
+        Navigation.NavigateTo("/lists", true);
     }
 }
