@@ -2,21 +2,45 @@
 @inject IJSRuntime JSRuntime
 @inject HttpClient Http
 
-<h3>Form Example</h3>
+<h3>Formulaire</h3>
 
 <div id="messageContainer" style="display:none; margin-bottom: 10px;"></div>
 
 <form id="exampleForm">
-    <label for="Nom">Nom:</label>
-    <input type="text" id="Nom" name="Nom"><br><br>
-
-    <label for="Age">Age:</label>
-    <input type="text" id="Age" name="Age"><br><br>
+    <label for="NomOuTitre">Nom ou Titre:</label>
+    <input type="text" id="NomOuTitre" name="NomOuTitre"><br><br>
 
     <label for="Region">Région:</label>
     <select id="Region" name="Region">
-        <!-- Options will be dynamically populated by JavaScript -->
+        <!-- Options will be dynamiquement populated by JavaScript -->
     </select><br><br>
+
+    <label for="UG">UG:</label>
+    <input type="text" id="UG" name="UG"><br><br>
+
+    <label for="UA">UA:</label>
+    <input type="text" id="UA" name="UA"><br><br>
+
+    <label for="AnneeReference">Année de référence:</label>
+    <input type="text" id="AnneeReference" name="AnneeReference"><br><br>
+
+    <label for="Intervenant">Intervenant:</label>
+    <input type="text" id="Intervenant" name="Intervenant"><br><br>
+
+    <label for="RepresentantIntervenant">Représentant (intervenant):</label>
+    <input type="text" id="RepresentantIntervenant" name="RepresentantIntervenant"><br><br>
+
+    <label for="NoEntenteContratPermis">Entente/Contrat/Permis:</label>
+    <input type="text" id="NoEntenteContratPermis" name="NoEntenteContratPermis"><br><br>
+
+    <label for="DetecteLors">Détecté lors:</label>
+    <input type="text" id="DetecteLors" name="DetecteLors"><br><br>
+
+    <label for="DetectePar">Détecté par:</label>
+    <input type="text" id="DetectePar" name="DetectePar"><br><br>
+
+    <label for="DetecteLe">Détecté le:</label>
+    <input type="date" id="DetecteLe" name="DetecteLe"><br><br>
 
     <!-- Ajoutez d'autres champs ici si nécessaire -->
 
@@ -28,10 +52,18 @@
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("associateForm", "exampleForm", 1, 1); // Person ID 1 from List ID 1
-            await JSRuntime.InvokeVoidAsync("associateTextField", "Nom", "Nom");
-            await JSRuntime.InvokeVoidAsync("associateTextField", "Age", "Age");
-            await JSRuntime.InvokeVoidAsync("associateSelectField", "Region", 2, "Id", "Nom", "Region"); //
+            await JSRuntime.InvokeVoidAsync("associateForm", "exampleForm", 5, 1); 
+            await JSRuntime.InvokeVoidAsync("associateTextField", "NomOuTitre", "NomOuTitre");
+            await JSRuntime.InvokeVoidAsync("associateSelectField", "Region", 2, "Id", "Nom", "Region"); 
+            await JSRuntime.InvokeVoidAsync("associateTextField", "UG", "UG");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "UA", "UA");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "AnneeReference", "AnneeReference");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "Intervenant", "Intervenant");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "RepresentantIntervenant", "RepresentantIntervenant");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "NoEntenteContratPermis", "NoEntenteContratPermis");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "DetecteLors", "DetecteLors");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "DetectePar", "DetectePar");
+            await JSRuntime.InvokeVoidAsync("associateTextField", "DetecteLe", "DetecteLe");
         }
     }
 
