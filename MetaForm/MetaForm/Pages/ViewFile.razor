@@ -1,6 +1,8 @@
 ﻿@page "/view-file/{fileName}"
 @inject IWebHostEnvironment WebHostEnvironment
 @using System.IO
+@inject IJSRuntime JSRuntime
+
 @code {
     [Parameter]
     public string FileName { get; set; }
@@ -17,6 +19,20 @@
         else
         {
             FileContent = "File not found.";
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                document.querySelectorAll('script').forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    newScript.innerHTML = oldScript.innerHTML;
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+            ");
         }
     }
 }

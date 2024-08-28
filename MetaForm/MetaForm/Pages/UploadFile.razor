@@ -3,14 +3,20 @@
 @inject IWebHostEnvironment WebHostEnvironment
 @inject NavigationManager NavigationManager
 
-<h3>Upload HTML File</h3>
+<h3>Upload HTML and JavaScript Files</h3>
 
 <div>
-    <InputFile OnChange="StoreFile" />
+    <label for="htmlFile">Select HTML File:</label>
+    <InputFile id="htmlFile" OnChange="StoreHtmlFile" />
 </div>
 
 <div>
-    <button @onclick="HandleFileSelected">Upload File</button>
+    <label for="jsFile">Select JavaScript File:</label>
+    <InputFile id="jsFile" OnChange="StoreJsFile" />
+</div>
+
+<div>
+    <button @onclick="HandleFileSelected">Upload Files</button>
 </div>
 
 @if (!string.IsNullOrEmpty(Message))
@@ -38,7 +44,8 @@ else
 }
 
 @code {
-    private IBrowserFile SelectedFile { get; set; }
+    private IBrowserFile SelectedHtmlFile { get; set; }
+    private IBrowserFile SelectedJsFile { get; set; }
     private string Message { get; set; }
     private List<string> UploadedFiles { get; set; }
 
@@ -47,32 +54,57 @@ else
         LoadUploadedFiles();
     }
 
-    private void StoreFile(InputFileChangeEventArgs e)
+    private void StoreHtmlFile(InputFileChangeEventArgs e)
     {
-        SelectedFile = e.File;
-        Message = "File selected: " + SelectedFile.Name;
+        SelectedHtmlFile = e.File;
+        Message = "HTML file selected: " + SelectedHtmlFile.Name;
+    }
+
+    private void StoreJsFile(InputFileChangeEventArgs e)
+    {
+        SelectedJsFile = e.File;
+        Message = "JavaScript file selected: " + SelectedJsFile.Name;
     }
 
     private async Task HandleFileSelected()
     {
-        if (SelectedFile != null)
+        if (SelectedHtmlFile != null && SelectedJsFile != null)
         {
-            var uploadPath = Path.Combine(WebHostEnvironment.WebRootPath, SelectedFile.Name);
+            var htmlFileNameWithoutExtension = Path.GetFileNameWithoutExtension(SelectedHtmlFile.Name);
+            var jsFileNameWithoutExtension = Path.GetFileNameWithoutExtension(SelectedJsFile.Name);
 
-            using (var stream = SelectedFile.OpenReadStream())
+            if (htmlFileNameWithoutExtension == jsFileNameWithoutExtension)
             {
-                using (var fileStream = new FileStream(uploadPath, FileMode.Create))
-                {
-                    await stream.CopyToAsync(fileStream);
-                }
-            }
+                var htmlUploadPath = Path.Combine(WebHostEnvironment.WebRootPath, SelectedHtmlFile.Name);
+                var jsUploadPath = Path.Combine(WebHostEnvironment.WebRootPath, SelectedJsFile.Name);
 
-            Message = $"File uploaded successfully: {SelectedFile.Name}";
-            LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
+                using (var htmlStream = SelectedHtmlFile.OpenReadStream())
+                {
+                    using (var htmlFileStream = new FileStream(htmlUploadPath, FileMode.Create))
+                    {
+                        await htmlStream.CopyToAsync(htmlFileStream);
+                    }
+                }
+
+                using (var jsStream = SelectedJsFile.OpenReadStream())
+                {
+                    using (var jsFileStream = new FileStream(jsUploadPath, FileMode.Create))
+                    {
+                        await jsStream.CopyToAsync(jsFileStream);
+                    }
+                }
+
+                Message = $"Files uploaded successfully: {SelectedHtmlFile.Name} and {SelectedJsFile.Name}";
+                LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
+            }
+            else
+            {
+                Message = "The HTML and JavaScript files must have the same name.";
+            }
         }
         else
         {
-            Message = "No file selected.";
+            Message = "Both HTML and JavaScript files must be selected.";
         }
     }
 
@@ -84,11 +116,17 @@ else
 
     private void DeleteFile(string fileName)
     {
-        var filePath = Path.Combine(WebHostEnvironment.WebRootPath, fileName);
-        if (System.IO.File.Exists(filePath))
+        var filePathHtml = Path.Combine(WebHostEnvironment.WebRootPath, fileName);
+        var filePathJs = Path.Combine(WebHostEnvironment.WebRootPath, Path.ChangeExtension(fileName, ".js"));
+
+        if (System.IO.File.Exists(filePathHtml))
         {
-            System.IO.File.Delete(filePath);
-            Message = $"File deleted: {fileName}";
+            System.IO.File.Delete(filePathHtml);
+            if (System.IO.File.Exists(filePathJs))
+            {
+                System.IO.File.Delete(filePathJs);
+            }
+            Message = $"Files deleted: {fileName} and {Path.GetFileName(filePathJs)}";
             LoadUploadedFiles(); // Recharge la liste des fichiers téléversés
         }
         else
@@ -97,7 +135,7 @@ else
         }
     }
 
- private void ViewFile(string fileName)
+    private void ViewFile(string fileName)
     {
         NavigationManager.NavigateTo($"/view-file/{fileName}");
     }
