@@ -29,13 +29,13 @@
 @if (UploadedFiles != null && UploadedFiles.Any())
 {
     <ul>
-    @foreach (var file in UploadedFiles)
-    {
-        <li>
-            <button @onclick="() => ViewFile(file)">@file</button>
-            <button @onclick="() => DeleteFile(file)">Delete</button>
-        </li>
-    }
+        @foreach (var file in UploadedFiles)
+        {
+            <li>
+                <button @onclick="() => ViewFile(file)">@file</button>
+                <button @onclick="() => DeleteFile(file)">Delete</button>
+            </li>
+        }
     </ul>
 }
 else
@@ -75,9 +75,15 @@ else
 
             if (htmlFileNameWithoutExtension == jsFileNameWithoutExtension)
             {
-                var htmlUploadPath = Path.Combine(WebHostEnvironment.WebRootPath, SelectedHtmlFile.Name);
-                var jsUploadPath = Path.Combine(WebHostEnvironment.WebRootPath, SelectedJsFile.Name);
+                var uploadDirectory = Path.Combine(WebHostEnvironment.WebRootPath, "uploads");
 
+                // Créer le répertoire si nécessaire
+                Directory.CreateDirectory(uploadDirectory);
+
+                var htmlUploadPath = Path.Combine(uploadDirectory, SelectedHtmlFile.Name);
+                var jsUploadPath = Path.Combine(uploadDirectory, SelectedJsFile.Name);
+
+                // Téléversement du fichier HTML
                 using (var htmlStream = SelectedHtmlFile.OpenReadStream())
                 {
                     using (var htmlFileStream = new FileStream(htmlUploadPath, FileMode.Create))
@@ -86,6 +92,7 @@ else
                     }
                 }
 
+                // Téléversement du fichier JavaScript
                 using (var jsStream = SelectedJsFile.OpenReadStream())
                 {
                     using (var jsFileStream = new FileStream(jsUploadPath, FileMode.Create))
@@ -110,14 +117,21 @@ else
 
     private void LoadUploadedFiles()
     {
-        var uploadDirectory = WebHostEnvironment.WebRootPath;
-        UploadedFiles = Directory.GetFiles(uploadDirectory, "*.html").Select(Path.GetFileName).ToList();
+        var uploadDirectory = Path.Combine(WebHostEnvironment.WebRootPath, "uploads");
+        if (Directory.Exists(uploadDirectory))
+        {
+            UploadedFiles = Directory.GetFiles(uploadDirectory, "*.html").Select(Path.GetFileName).ToList();
+        }
+        else
+        {
+            UploadedFiles = new List<string>();
+        }
     }
 
     private void DeleteFile(string fileName)
     {
-        var filePathHtml = Path.Combine(WebHostEnvironment.WebRootPath, fileName);
-        var filePathJs = Path.Combine(WebHostEnvironment.WebRootPath, Path.ChangeExtension(fileName, ".js"));
+        var filePathHtml = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", fileName);
+        var filePathJs = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", Path.ChangeExtension(fileName, ".js"));
 
         if (System.IO.File.Exists(filePathHtml))
         {

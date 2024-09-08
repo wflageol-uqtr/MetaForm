@@ -1,7 +1,7 @@
 ﻿@page "/view-file/{fileName}"
 @inject IWebHostEnvironment WebHostEnvironment
-@using System.IO
 @inject IJSRuntime JSRuntime
+@using System.IO
 
 @code {
     [Parameter]
@@ -11,7 +11,7 @@
 
     protected override void OnParametersSet()
     {
-        var filePath = Path.Combine(WebHostEnvironment.WebRootPath, FileName);
+        var filePath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", FileName);
         if (System.IO.File.Exists(filePath))
         {
             FileContent = System.IO.File.ReadAllText(filePath);
@@ -26,6 +26,7 @@
     {
         if (firstRender)
         {
+            // Exécution du JavaScript contenu dans le fichier HTML
             await JSRuntime.InvokeVoidAsync("eval", @"
                 document.querySelectorAll('script').forEach(oldScript => {
                     const newScript = document.createElement('script');
@@ -33,6 +34,20 @@
                     oldScript.parentNode.replaceChild(newScript, oldScript);
                 });
             ");
+
+            // Charger et exécuter le fichier JavaScript associé
+            var jsFilePath = Path.Combine(WebHostEnvironment.WebRootPath, "uploads", Path.ChangeExtension(FileName, ".js"));
+            if (System.IO.File.Exists(jsFilePath))
+            {
+                var jsContent = System.IO.File.ReadAllText(jsFilePath);
+                await JSRuntime.InvokeVoidAsync("eval", jsContent);
+            }
+
+            // Appeler les fonctions de la librairie JS après le rendu
+            await JSRuntime.InvokeVoidAsync("associateForm", "exampleForm", 1, 1); // Exemple d'appel à associateForm
+                                                                                   // Ajouter d'autres appels si nécessaire
+            await JSRuntime.InvokeVoidAsync("associateTextField", "Nom", "Nom");
+            await JSRuntime.InvokeVoidAsync("associateSelectField", "Region", 2, "Id", "Nom", "Region");
         }
     }
 }
